@@ -58,8 +58,8 @@
 // }
 
 // updateCategoryEmbeddings();
-import { pool } from '../db/db.js';
-import { getEmbedding } from './utils/geminiClient.js'; // נניח שזו הפונקציה שצירפת
+import { pool } from '../../db/db.js';
+import { getEmbedding } from './geminiClient.js'; // נניח שזו הפונקציה שצירפת
 // ... וכל הייבוא שנדרש ...
 
 /**

@@ -10,63 +10,26 @@ export const pool = new Pool({
 // --- פונקציות ליבת DB ---
 
 // 1. מציאת הקטגוריה הקרובה ביותר לווקטור
-// export async function findClosestCategory(itemVector) {
-//     console.log("Searching for closest category for vector length:", itemVector.length);
-//     try {
-//         // המרת הוקטור לפורמט מחרוזת
-//         const vectorString = `[${itemVector.join(',')}]`;
-        
-//         const query = `
-            
-//             SELECT id, gemini_embedding <-> $1 ::vector(768) AS distance
-//             FROM categories
-//             ORDER BY distance ASC        
-//             LIMIT 1;
-//         `;
-//         // const query = `
-//         //     SELECT *
-//         //     FROM categories
-//         //     WHERE gemini_embedding IS NOT NULL
-//         //     ORDER BY gemini_embedding <->$1 ::vector
-//         //     LIMIT 1;
-//         // `;
-        
-//         const result = await pool.query(query, [vectorString]);
-        
-//         if (result.rows.length === 0) {
-//             console.log("No categories found with embeddings");
-//             return null;
-//         }
-        
-//         console.log("Closest category found:", {
-//             categoryId: result.rows[0].id,
-//             distance: result.rows[0].distance
-//         });
-        
-//         return result.rows[0].id;
-//     } catch (error) {
-//         console.error("Error in findClosestCategory:", error);
-//         throw error;
-//     }
-// }
-
-
-
-// ... (קוד חיבור pool)
-
-// 1. מציאת הקטגוריה הקרובה ביותר לווקטור (מתוקן)
 export async function findClosestCategory(itemVector) {
     console.log("Searching for closest category for vector length:", itemVector.length);
     try {
+        // המרת הוקטור לפורמט מחרוזת
         const vectorString = `[${itemVector.join(',')}]`;
         
         const query = `
+            
             SELECT id, gemini_embedding <-> $1 ::vector(768) AS distance
             FROM categories
-            WHERE gemini_embedding IS NOT NULL -- ⬅️ שיפור 1: מתעלם מווקטורים ריקים
-            ORDER BY distance ASC 
+            ORDER BY distance ASC        
             LIMIT 1;
         `;
+        // const query = `
+        //     SELECT *
+        //     FROM categories
+        //     WHERE gemini_embedding IS NOT NULL
+        //     ORDER BY gemini_embedding <->$1 ::vector
+        //     LIMIT 1;
+        // `;
         
         const result = await pool.query(query, [vectorString]);
         
@@ -75,31 +38,72 @@ export async function findClosestCategory(itemVector) {
             return null;
         }
         
-        const closest = result.rows[0];
-
         console.log("Closest category found:", {
-            categoryId: closest.id,
-            distance: closest.distance
+            categoryId: result.rows[0].id,
+            distance: result.rows[0].distance
         });
         
-        // ⬅️ שינוי קריטי: מחזיר אובייקט עם ID ו-Distance
-        return {
-            categoryId: closest.id,
-            distance: parseFloat(closest.distance) // לוודא שמחזיר מספר
-        };
-
+        return result.rows[0].id;
     } catch (error) {
         console.error("Error in findClosestCategory:", error);
         throw error;
     }
 }
 
+
+
+// ... (קוד חיבור pool)
+
+// 1. מציאת הקטגוריה הקרובה ביותר לווקטור (מתוקן)
+// export async function findClosestCategory(itemVector) {
+//     console.log("Searching for closest category for vector length:", itemVector.length);
+//     try {
+//         const vectorString = `[${itemVector.join(',')}]`;
+        
+//         const query = `
+//             SELECT id, name, gemini_embedding <-> $1::vector AS distance
+//             FROM categories
+//             WHERE gemini_embedding IS NOT NULL
+//             ORDER BY distance ASC 
+//             LIMIT 1;
+//         `;
+        
+//         // שינוי: מעבירים את vectorString כפרמטר לשאילתה
+//         const result = await pool.query(query, [vectorString]); 
+        
+//         if (result.rows.length === 0) {
+//             console.log("No categories found with embeddings");
+//             return null;
+//         }
+        
+//         const { id, name, distance } = result.rows[0];
+
+//         console.log("Closest category found:", {
+//             categoryId: id,
+//             categoryName: name,
+//             distance: distance
+//         });
+        
+//         // ⬅️ שינוי קריטי: מחזיר אובייקט עם ID ו-Distance
+//         return {
+//             categoryId: id,
+//             categoryName: name, // מחזירים גם את השם לטובת הדפסה ברורה
+//             distance: parseFloat(distance)
+//         };
+
+//     } catch (error) {
+//         console.error("Error in findClosestCategory:", error);
+//         throw error;
+//     }
+// }
+
 // ... (שאר הקוד ממשיך כרגיל)
 // 2. שליפת פריטים ממופים עבור Pathfinding
 // backend/dbService.js - ודאי שזה נראה בדיוק כך:
 
 export async function getMappedItemsForPathfinding(userId) {
-const query = `SELECT i.id AS item_id,i.item_name,
+const query = `
+SELECT i.id AS item_id,i.item_name,
 c.row_index AS r,     
 c.col_index AS c    
 FROM user_shopping_items i
@@ -180,17 +184,18 @@ export async function getUnmappedItems(userId) {
 
 // 8. יצירת משתמש חדש או שליפת קיים
 export async function findOrCreateUser(email, fullName) {
+  console.log("email--name",email,fullName);
   // מנסה למצוא את המשתמש
   let result = await pool.query(
-    `SELECT id FROM users WHERE email = $1`,
-    [email]
+    `SELECT id FROM users WHERE email = $1 AND full_name= $2`,
+    [email,fullName]
   );
-  if (result.rows.length > 0) return result.rows[0];
+  if (result.rows.length > 0) return result.rows[0].id;
 
   // אם לא קיים – יוצרים חדש
   result = await pool.query(
     `INSERT INTO users (email, full_name) VALUES ($1, $2) RETURNING id`,
     [email, fullName]
   );
-  return result.rows[0];
+  return result.rows[0].id;
 }

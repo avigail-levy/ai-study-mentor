@@ -1,5 +1,5 @@
 // backend/utils/geminiClient.js - שימוש ב-Fetch API ישיר
-import  { getCategories }  from '../../db/dbService.js'
+import  { getCategories }  from '../models/dbService.js'
 // ודא ש-API Key נמצא!
 if (!process.env.GEMINI_API_KEY) {
     console.error("שגיאה: משתנה הסביבה GEMINI_API_KEY לא הוגדר.");

@@ -1,13 +1,9 @@
-// backend/gemini_utils.js
-
 import { GoogleGenAI, Type } from '@google/genai';
 import * as fs from 'fs';
-// יבוא ה-AI Client (נניח שהוא מגיע מקובץ geminiClient.js כפי שציינת)
-// נניח ש-ai הוא מופע של GoogleGenAI, כגון: const ai = new GoogleGenAI({...});
-// import { ai } from './utils/geminiClient.js'; 
-
-
-// --- פונקציות עזר ---
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY
+});
+ 
 
 // Helper - file to Gemini Part (נשארת ללא שינוי)
 export function fileToGenerativePart(path, mimeType) {
@@ -27,14 +23,11 @@ const SHOPPING_LIST_SCHEMA = {
     properties: {
         products: {
             type: Type.ARRAY,
-            items: {
-                type: Type.STRING,
-                description: 'A single, cleaned, normalized product name without quantities or context (e.g., "חלב", "סבון כלים").'
-            },
-            description: 'The list of extracted and cleaned product names.'
+            items: { type: Type.STRING },
+            description: 'Clean names of products'
         }
     },
-    propertyOrdering: ["products"],
+    required: ["products"]
 };
 
 
@@ -81,7 +74,8 @@ async function extractProducts(rawText) {
  */
 export async function extractProductsFromPDF(path) {
     const pdfPart = fileToGenerativePart(path, 'application/pdf');
-    const systemPrompt = "You are a shopping list data extractor. Extract all product names from the attached document and return them as a clean JSON list.";
+    const systemPrompt = `You are a shopping list data extractor. 
+    Extract all product names from the attached document and return them as a clean JSON list.`;
     
     // נשתמש בפונקציית העזר כדי להבטיח את מבנה הפלט.
     const rawTextResponse = await ai.models.generateContent({
