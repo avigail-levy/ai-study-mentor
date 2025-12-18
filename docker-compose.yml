@@ -7,19 +7,50 @@ services:
       - "5000:5000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_URL=postgres://postgres:password@db:5432/vectordb
+      - PORT=5000
     volumes:
       - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - ai-network
+    command: ["npm", "run", "dev"]
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "3000:80" # מפה פורט 80 של nginx ל-3000 במחשב
     depends_on:
       - backend
     networks:
       - ai-network
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vectordb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U postgres -d vectordb"]
+    interval: 10s
+    timeout: 10s
+    retries: 10
+    start_period: 5s
+
+    networks:
+      - ai-network
+
+volumes:
+  postgres_data:
 
 networks:
   ai-network:
