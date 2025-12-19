@@ -41,7 +41,8 @@ function getBFS_Distance(start, end) {
                 if (visited.has(newKey)) continue;
 
                 // בדיקת מגבלת מעבר אופקי (קפיצה בין עמודות שונות)
-                if (c !== nc && !ALLOWED_CROSS_COLS.has(c) && !ALLOWED_CROSS_COLS.has(nc)) {
+                const isMainAisle = r === 0 || r === ROWS - 1;
+                if (!isMainAisle && c !== nc && !ALLOWED_CROSS_COLS.has(c) && !ALLOWED_CROSS_COLS.has(nc)) {
                     // אם מנסים לעבור רוחבית באזורים לא מורשים, המעבר נחסם.
                     continue; 
                 }
@@ -102,7 +103,11 @@ export function calculateShortestPath(itemCoordinates) {
             remainingItems.splice(nextItemIndex, 1);
         } else {
             // אם לא נמצאה קטגוריה קרובה (במקרה של לוגיקה שגויה או דאטה חסר)
-            break;
+            // במקום לשבור, ניקח את הפריט הבא בתור כדי להבטיח שכל הפריטים יוחזרו
+            const nextItem = remainingItems[0];
+            calculatedOrderMap[nextItem.item_id] = currentOrder++;
+            currentPoint = nextItem;
+            remainingItems.splice(0, 1);
         }
     }
     
