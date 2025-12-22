@@ -1,8 +1,26 @@
-FROM node:18-alpine
+# שלב 1: בניית התלויות
+FROM node:20-alpine AS dependencies
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --only=production 
+# התקנת תלויות Production בלבד
+RUN npm ci --omit=dev
+
+# שלב 2: יצירת אימג' Production סופי
+FROM node:20-alpine AS final
+WORKDIR /app
+
+# העתקת התלויות מהשלב הקודם
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# העתקת קוד המקור
 COPY . .
+
+# יצירת משתמש לא-שורשי והעברת בעלות
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# חשיפת הפורט
 EXPOSE 5000
-# שימוש ב-node רגיל ולא nodemon
+
+# הפקודה להרצת השרת
 CMD ["node", "server.js"]

@@ -44,7 +44,7 @@ export const addItem = async (req, res) => {
             if (!userId || !item_name) {
                 return res.status(400).json({ error: 'UserID and item name required' });
             }
-            console.log("app.post(/api/list/add-item",userId, item_name)
+            console.log("app.post(/api/list/add-item", userId, item_name);
             const itemId = await addItemToRawList(userId, item_name); 
             res.json({ success: true, itemId });
         } catch (error) {

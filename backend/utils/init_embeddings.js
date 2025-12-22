@@ -4,7 +4,7 @@ import { getEmbedding } from './geminiClient.js';
 /*
   פונקציית עזר לנורמליזציה (L2) של וקטור
  הופכת את אורך הוקטור ל-1, ומונעת הטיה בחישוב מרחק אוקלידי (L2).
- */
+*/
 function normalizeVector(vector) {
     if (!vector || vector.length === 0) return [];
     
@@ -81,4 +81,8 @@ async function updateCategoryEmbeddings() {
     }
 }
 
-updateCategoryEmbeddings();
+// הרצת הפונקציה וסגירת החיבור למסד הנתונים בסיום
+updateCategoryEmbeddings().then(() => {
+    console.log("תהליך הסתיים, סוגר חיבור ל-DB.");
+    pool.end();
+});

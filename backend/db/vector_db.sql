@@ -34,6 +34,7 @@ INSERT INTO users (email, full_name) VALUES
 ('zipi.3382@gmail.com', 'ציפי סלומון') 
 ON CONFLICT (email) DO NOTHING;
 
+
 CREATE INDEX ON categories
 USING ivfflat (gemini_embedding vector_l2_ops)
 WITH (lists = 100);
