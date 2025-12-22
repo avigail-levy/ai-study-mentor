@@ -1,4 +1,3 @@
-import  { getCategories }  from '../models/dbService.js'
 if (!process.env.GEMINI_API_KEY) {
     console.error("שגיאה: משתנה הסביבה GEMINI_API_KEY לא הוגדר.");
 }
@@ -8,10 +7,10 @@ const EMBEDDING_MODEL = 'text-embedding-004';
 
 /*
  מקבלת מחרוזת טקסט ומחזירה את הקידוד הווקטורי שלה (Embedding).
-  עוקפת את ה-SDK באמצעות fetch API עקב שגיאת requests[] חוזרת. 
+  שימוש ב-SDK הרשמי לטיפול נכון בפורמט הבקשה.
  */
 export async function getEmbedding(text) {
-    console.log("embdding--------------")
+    console.log(`embdding-------------- Input: "${text}"`);
     if (!text || text.trim() === '') {
         throw new Error("Text cannot be empty for embedding.");
     }
@@ -19,37 +18,35 @@ export async function getEmbedding(text) {
     try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${API_KEY}`;
         
-        const payload = {
-            // שולח את ה-content במבנה המדויק שה-API מצפה לו (ללא עטיפת requests)
-            content: { 
-                parts: [{ text: text }] 
-            },
-            taskType: 'RETRIEVAL_DOCUMENT'
-        };
-
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=utf-8',
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                content: {
+                    parts: [{ text: String(text) }]
+                }
+            })
         });
 
-        const data = await response.json();
         if (!response.ok) {
-            // אם יש שגיאה ב-API Key או במודל
-            throw new Error(`שגיאת HTTP: ${response.status}. פרטים: ${data.error ? data.error.message : JSON.stringify(data)}`);
-        }
-        
-        // בודק את מבנה התגובה של ה-API
-        if (data && data.embedding && data.embedding.values) {
-             return data.embedding.values;
+            const errorData = await response.json();
+            throw new Error(`Gemini API Error: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
-        throw new Error("מבנה תגובה לא צפוי או וקטור ריק מה-API.");
+        const data = await response.json();
+
+        if (data && data.embedding && data.embedding.values) {
+             const vec = data.embedding.values;
+             console.log(`Vector generated. Length: ${vec.length}, First 5 values: [${vec.slice(0, 5).join(', ')}]`);
+             return vec;
+        }
+
+        throw new Error("מבנה תגובה לא צפוי מה-API.");
 
     } catch (error) {
-        console.error("שגיאה ביצירת וקטור:", error.message);
+        console.error("שגיאה ביצירת וקטור:", error);
         throw new Error("נכשל ביצירת וקטור ייצוגי");
     }
 }

@@ -12,6 +12,7 @@ import { findOrCreateUser,findClosestCategory,
          addItemToRawList, 
          updateItemMapping, 
          getUnmappedItems, 
+         clearUserList,
   } from '../models/dbService.js';
   
 
@@ -89,89 +90,7 @@ export const addVoiceItems = async (req, res) => {
         }
     };
 
-// export const calculatePath = async (req, res) => {
-//       try {
-//             const { userId } = req.body;
-//             if (!userId) {
-//                 return res.status(400).json({ error: 'UserID required' });
-//             }
-    
-//             // 1. מיפוי (AI Mapping): טפל בפריטים לא ממופים
-//             const unmappedItems = await getUnmappedItems(userId); // פונקציה לממש ב-dbService
-    
-//             for (const item of unmappedItems) {
-//                 try {
-//                     console.log(`Attempting to map item: ${item.item_name} (ID: ${item.id})`);
-                    
-//                     // שלב 1: קבלת ה-Embedding מה-AI
-//                     const itemEmbedding = await getEmbedding(item.item_name);
-    
-//                     if (!itemEmbedding) {
-//                         console.error(`Failed to get embedding for: ${item.item_name}. Skipping.`);
-//                         continue;
-//                     }
-//                     // שלב 2: מציאת הקטגוריה הקרובה ביותר (ב-DB)
-//                     const categoryId = await findClosestCategory(itemEmbedding);
-//                     // const categoryId = await findClosestCategory(item.item_name).categoryId;
-    
-//                     if (categoryId) {
-//                         // עדכון ה-DB עם ה-mapped_category_id
-//                         await updateItemMapping(categoryId,item.id); 
-//                         console.log(`Successfully mapped ${item.item_name} to Category ID: ${categoryId}`);
-//                     } else {
-//                         console.log(`No closest category found for: ${item.item_name}. Skipping.`);
-//                     }
-//                 } catch (e) {
-//                     // קריטי: אם יש שגיאה ב-API של Gemini או בחיבור ל-DB.
-//                     console.error(`Critical error during mapping of ${item.item_name}:`, e.message);
-//                     // ממשיכים לפריט הבא, כדי לא להפיל את כל התהליך.
-//                 }
-//             }
-    
-//             // 2. הכנת קואורדינטות: שלוף את כל הפריטים הממופים והקואורדינטות שלהם (R, C)
-//             const mappedItems = await getMappedItemsForPathfinding(userId);
-    
-//             // *** לוודא שמופעל מיפוי לאחר הלולאה, למקרה שהצליחו מיפויים בסיבוב הזה ***
-//             // שלוף שוב, רק כדי לוודא ש-mappedItems מכיל את כל הפריטים שמופו כרגע
-//             // (אם הלוגיקה של getUnmappedItems לא משתנה בין קריאות)
-    
-//             if (mappedItems.length === 0) {
-//                 return res.json({ success: true, list: [], answer: 'הרשימה ריקה או שעדיין לא מופתה בהצלחה.' });
-//             }
-    
-//             // 3. חישוב מסלול (Pathfinding)
-//             const calculatedOrderMap = calculateShortestPath(mappedItems);
-    
-//             // 4. עדכון הסדר המחושב ב-DB
-//             for (const itemId in calculatedOrderMap) {
-//                 await updateItemOrder(parseInt(itemId), calculatedOrderMap[itemId]);
-//             }
-    
-//             // 5. שליפת הרשימה המסודרת והחזרה למשתמש
-//             const finalSortedList = await getSortedShoppingList(userId); 
-    
-//             // סינתזת תשובה סופית
-//             const pathSummary = finalSortedList.map(item => item.item_name).join(' -> ');
-//             const prompt = `המסלול הקצר ביותר לרשימת הקניות שלך הוא: ${pathSummary}.`;
-            
-//             // let aiSummary;
-//             // try {
-//             //     aiSummary = await generateAIResponse(prompt);
-//             // } catch (e) {
-//             //     console.error("Failed to generate AI summary:", e.message);
-//             //     aiSummary = `נכשל ליצור סיכום AI, אך המסלול חושב בהצלחה: ${pathSummary}.`;
-//             // }
-    
-//             res.json({
-//                 success: true,
-//                 // answer: aiSummary,
-//                 list: finalSortedList,
-//             });
-//         } catch (error) {
-//             console.error('Error in calculate-path route:', error);
-//             res.status(500).json({ error: 'Search and Pathfinding error' });
-//         }
-//     };
+
 export const calculatePath = async (req, res) => {
     console.log("calculatePath",calculatePath);
     try {
@@ -352,5 +271,20 @@ export const getShoppingListWithDirections = async (req, res) => {
     } catch (error) {
         console.error('Error getting shopping list with directions:', error);
         res.status(500).json({ error: 'שגיאה בשליפת רשימת הקניות' });
+    }
+};
+
+export const clearList = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: 'UserID required' });
+        }
+
+        await clearUserList(userId);
+        res.json({ success: true, message: 'Shopping list cleared successfully' });
+    } catch (error) {
+        console.error('Clear List Error:', error);
+        res.status(500).json({ error: 'Failed to clear list' });
     }
 };

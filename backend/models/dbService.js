@@ -5,27 +5,34 @@ import 'dotenv/config';
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL, 
 });
+
+// פונקציית עזר לנורמליזציה (כדי להתאים למה שנשמר ב-init_embeddings)
+function normalizeVector(vector) {
+    const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+    if (magnitude > 1e-6) {
+        return vector.map(val => val / magnitude);
+    }
+    return vector;
+}
+
 // 1. מציאת הקטגוריה הקרובה ביותר לווקטור
 export async function findClosestCategory(itemVector) {
     console.log("Searching for closest category for vector length:", itemVector.length);
     try {
+        console.log(`Search Vector First 5 values: [${itemVector.slice(0, 5).join(', ')}]`);
+        // נרמול הוקטור לפני החיפוש (חשוב לדיוק המרחק)
+        const normalizedVector = normalizeVector(itemVector);
+        
         // המרת הוקטור לפורמט מחרוזת
-        const vectorString = `[${itemVector.join(',')}]`;
+        const vectorString = `[${normalizedVector.join(',')}]`;
         
         const query = `
-            
-            SELECT id, gemini_embedding <-> $1 ::vector(768) AS distance
+            SELECT id, name, gemini_embedding <-> $1 ::vector(768) AS distance
             FROM categories
+            WHERE gemini_embedding IS NOT NULL
             ORDER BY distance ASC        
             LIMIT 1;
         `;
-        // const query = `
-        //     SELECT *
-        //     FROM categories
-        //     WHERE gemini_embedding IS NOT NULL
-        //     ORDER BY gemini_embedding <->$1 ::vector
-        //     LIMIT 1;
-        // `;
         
         const result = await pool.query(query, [vectorString]);
         
@@ -36,6 +43,7 @@ export async function findClosestCategory(itemVector) {
         
         console.log("Closest category found:", {
             categoryId: result.rows[0].id,
+            categoryName: result.rows[0].name,
             distance: result.rows[0].distance
         });
         
@@ -45,57 +53,6 @@ export async function findClosestCategory(itemVector) {
         throw error;
     }
 }
-
-
-
-// ... (קוד חיבור pool)
-
-// 1. מציאת הקטגוריה הקרובה ביותר לווקטור (מתוקן)
-// export async function findClosestCategory(itemVector) {
-//     console.log("Searching for closest category for vector length:", itemVector.length);
-//     try {
-//         const vectorString = `[${itemVector.join(',')}]`;
-        
-//         const query = `
-//             SELECT id, name, gemini_embedding <-> $1::vector AS distance
-//             FROM categories
-//             WHERE gemini_embedding IS NOT NULL
-//             ORDER BY distance ASC 
-//             LIMIT 1;
-//         `;
-        
-//         // שינוי: מעבירים את vectorString כפרמטר לשאילתה
-//         const result = await pool.query(query, [vectorString]); 
-        
-//         if (result.rows.length === 0) {
-//             console.log("No categories found with embeddings");
-//             return null;
-//         }
-        
-//         const { id, name, distance } = result.rows[0];
-
-//         console.log("Closest category found:", {
-//             categoryId: id,
-//             categoryName: name,
-//             distance: distance
-//         });
-        
-//         // ⬅️ שינוי קריטי: מחזיר אובייקט עם ID ו-Distance
-//         return {
-//             categoryId: id,
-//             categoryName: name, // מחזירים גם את השם לטובת הדפסה ברורה
-//             distance: parseFloat(distance)
-//         };
-
-//     } catch (error) {
-//         console.error("Error in findClosestCategory:", error);
-//         throw error;
-//     }
-// }
-
-// ... (שאר הקוד ממשיך כרגיל)
-// 2. שליפת פריטים ממופים עבור Pathfinding
-// backend/dbService.js - ודאי שזה נראה בדיוק כך:
 
 export async function getMappedItemsForPathfinding(userId) {
 const query = `
@@ -194,4 +151,10 @@ export async function findOrCreateUser(email, fullName) {
     [email, fullName]
   );
   return result.rows[0].id;
+}
+
+// 9. מחיקת כל הפריטים ברשימה של משתמש
+export async function clearUserList(userId) {
+  const query = `DELETE FROM user_shopping_items WHERE user_id = $1`;
+  await pool.query(query, [userId]);
 }
