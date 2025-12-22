@@ -1,20 +1,8 @@
-# Use Node.js LTS
 FROM node:18-alpine
-
-# Set working directory
 WORKDIR /app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy all backend files
+RUN npm install --only=production 
 COPY . .
-
-# Expose port
 EXPOSE 5000
-
-# Start the server with nodemon for development
+# שימוש ב-node רגיל ולא nodemon
 CMD ["node", "server.js"]

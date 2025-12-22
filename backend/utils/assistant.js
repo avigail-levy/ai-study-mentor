@@ -4,8 +4,6 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
  
-
-// Helper - file to Gemini Part (נשארת ללא שינוי)
 export function fileToGenerativePart(path, mimeType) {
     return {
         inlineData: {
@@ -15,8 +13,8 @@ export function fileToGenerativePart(path, mimeType) {
     };
 }
 
-/**
- * הגדרת הסכימה (Schema) המשותפת: תמיד דורשים מערך של שמות מוצרים נקיים ב-JSON
+/*
+ הגדרת הסכימה (Schema) המשותפת: תמיד דורשים מערך של שמות מוצרים נקיים ב-JSON
  */
 const SHOPPING_LIST_SCHEMA = {
     type: Type.OBJECT,
@@ -33,10 +31,8 @@ const SHOPPING_LIST_SCHEMA = {
 
 // --- פונקציות חילוץ וניקוי קלט ---
 
-/**
- * פרומפט בסיסי לניקוי והוצאת שמות מוצרים מתוך טקסט חופשי.
- * * @param {string} rawText - הטקסט הגולמי של רשימת הקניות (נקי או מבולגן).
- * @returns {Promise<string[]>} - מערך של שמות מוצרים נקיים.
+/*
+  פרומפט בסיסי לניקוי והוצאת שמות מוצרים מתוך טקסט חופשי.
  */
 async function extractProducts(rawText) {
     if (!rawText || rawText.trim() === '') return [];
@@ -64,15 +60,11 @@ async function extractProducts(rawText) {
     }
 }
 
-
-// --- פונקציות קצה (Multi-Modal) ---
-
-/**
- * 1. חילוץ רשימת מוצרים מקובץ PDF (למשל, חשבונית או קטלוג).
- * * @param {string} path - נתיב לקובץ PDF.
- * @returns {Promise<string[]>} - מערך של שמות מוצרים נקיים.
+/*
+  1. חילוץ רשימת מוצרים מקובץ PDF (למשל, חשבונית או קטלוג).
  */
 export async function extractProductsFromPDF(path) {
+    console.log("extractProductsFromPDF",extractProductsFromPDF);
     const pdfPart = fileToGenerativePart(path, 'application/pdf');
     const systemPrompt = `You are a shopping list data extractor. 
     Extract all product names from the attached document and return them as a clean JSON list.`;
@@ -95,10 +87,8 @@ export async function extractProductsFromPDF(path) {
     }
 }
 
-/**
- * 2. חילוץ רשימת מוצרים מתמונה (למשל, רשימת קניות בכתב יד).
- * * @param {string} path - נתיב לקובץ תמונה (jpeg/png).
- * @returns {Promise<string[]>} - מערך של שמות מוצרים נקיים.
+/*
+  2. חילוץ רשימת מוצרים מתמונה (למשל, רשימת קניות בכתב יד).
  */
 export async function extractProductsFromImage(path, mimeType = 'image/jpeg') {
     const imagePart = fileToGenerativePart(path, mimeType);
@@ -121,14 +111,9 @@ export async function extractProductsFromImage(path, mimeType = 'image/jpeg') {
     }
 }
 
-/**
- * 3. חילוץ רשימת מוצרים מטקסט חופשי (ממשק קלט או העתק/הדבק).
- * * @param {string} text - הטקסט הגולמי.
- * @returns {Promise<string[]>} - מערך של שמות מוצרים נקיים.
+/*
+  3. חילוץ רשימת מוצרים מטקסט חופשי (ממשק קלט או העתק/הדבק).
  */
 export async function extractProductsFromText(text) {
     return extractProducts(text);
 }
-
-// ניתן להוסיף פונקציה ל-analyzeAudio, אך עליך לוודא שאת משתמשת במודל שתומך בזה
-// ומגדירה פרומפט מתאים (למשל, transcribe the audio and then extract the products).

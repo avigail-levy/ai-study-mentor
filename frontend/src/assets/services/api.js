@@ -72,6 +72,7 @@ export const uploadFileAndCalculate = async (userId, file) => {
 };
 
 export const calculatePath = async (userId) => {
+    console.log("calculatePath",calculatePath);
     const response = await fetch(`${API_URL}/calculate-path`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

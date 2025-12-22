@@ -1,14 +1,10 @@
-// backend/dbService.js
 import { Pool } from 'pg';
 import 'dotenv/config';
 
 // *** חיבור למסד הנתונים PostgreSQL ***
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // לדוגמה: postgres://postgres:secret@localhost:5432/postgres
+  connectionString: process.env.DATABASE_URL, 
 });
-
-// --- פונקציות ליבת DB ---
-
 // 1. מציאת הקטגוריה הקרובה ביותר לווקטור
 export async function findClosestCategory(itemVector) {
     console.log("Searching for closest category for vector length:", itemVector.length);
@@ -125,7 +121,7 @@ export async function updateItemOrder(itemId, order) {
 // 4. שליפת רשימת קניות מסודרת
 export async function getSortedShoppingList(userId) {
   const result = await pool.query(
-    `SELECT item_name, calculated_order
+    `SELECT id, item_name, calculated_order
      FROM user_shopping_items
      WHERE user_id = $1
      ORDER BY calculated_order, item_name`,

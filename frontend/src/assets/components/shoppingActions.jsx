@@ -78,6 +78,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
 
     // 4. כפתור הקסם - צא לקניות
     const handleStartShopping = async () => {
+        console.log("handleStartShopping",handleStartShopping);
         setIsWorking(true);
         try {
             const data = await calculatePath(userId);
@@ -105,7 +106,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
             </div>
 
             <div className="input-section" style={{marginTop: '20px'}}>
-                <h3>🎤 הוספה קולית</h3>
+                <h3>🎤 הקלטת רשימת קניות</h3>
                 <button 
                     className={`voice-btn ${isListening ? 'listening' : ''}`} 
                     onClick={handleVoiceRecord}
@@ -113,7 +114,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
                     style={{
                         width: '100%',
                         padding: '12px',
-                        backgroundColor: isListening ? '#ff4d4d' : '#3498db',
+                        backgroundColor: isListening ? '#ff4d4d' : '#22a10896',
                         color: 'white',
                         border: 'none',
                         borderRadius: '12px',

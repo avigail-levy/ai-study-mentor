@@ -38,7 +38,10 @@ const MainManager = () => {
                     <p className="ai-box">{pathResult.aiSummary}</p>
                     <ul className="path-list">
                         {pathResult.list.map((item, i) => (
-                            <li key={i}>{i+1}. {item.item_name}</li>
+                            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem', marginBottom: '8px' }}>
+    <span style={{ fontSize: '1.5rem' }}>{item.direction}</span> 
+    <span>{i+1}. {item.item_name}</span>
+</li>
                         ))}
                     </ul>
                 </div>

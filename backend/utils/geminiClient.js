@@ -1,6 +1,4 @@
-// backend/utils/geminiClient.js - שימוש ב-Fetch API ישיר
 import  { getCategories }  from '../models/dbService.js'
-// ודא ש-API Key נמצא!
 if (!process.env.GEMINI_API_KEY) {
     console.error("שגיאה: משתנה הסביבה GEMINI_API_KEY לא הוגדר.");
 }
@@ -8,9 +6,9 @@ if (!process.env.GEMINI_API_KEY) {
 const API_KEY = process.env.GEMINI_API_KEY;
 const EMBEDDING_MODEL = 'text-embedding-004'; 
 
-/**
- * מקבלת מחרוזת טקסט ומחזירה את הקידוד הווקטורי שלה (Embedding).
- * *** עוקפת את ה-SDK באמצעות fetch API עקב שגיאת requests[] חוזרת. ***
+/*
+ מקבלת מחרוזת טקסט ומחזירה את הקידוד הווקטורי שלה (Embedding).
+  עוקפת את ה-SDK באמצעות fetch API עקב שגיאת requests[] חוזרת. 
  */
 export async function getEmbedding(text) {
     console.log("embdding--------------")
@@ -56,13 +54,8 @@ export async function getEmbedding(text) {
     }
 }
 
-// ... שאר הפונקציות (compareVectors, findClosestCategory) נשארות כפי שהיו.
-/**
- * משווה בין שני וקטורים ומחזיר את מידת הדמיון ביניהם
- * @param {number[]} vec1 - וקטור ראשון להשוואה
- * @param {number[]} vec2 - וקטור שני להשוואה
- * @returns {number} ציון דמיון בין 0 ל-1 (1 = זהים לחלוטין)
- * @throws {Error} אם הוקטורים באורך שונה
+/*
+  משווה בין שני וקטורים ומחזיר את מידת הדמיון ביניהם
  */
 export function compareVectors(vec1, vec2) {
     // אימות קלט
@@ -85,17 +78,11 @@ export function compareVectors(vec1, vec2) {
     return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
 }
 
-/**
- * מחפשת את הקטגוריה הכי דומה לטקסט נתון
- * @param {string} text - הטקסט לחיפוש
- * @param {Array} categories - מערך קטגוריות קיימות
- * @returns {Object} אובייקט המכיל את הקטגוריה הכי דומה וציון הדמיון
- * @throws {Error} אם אין קטגוריות או שיש שגיאה בחיפוש
+/*
+  מחפשת את הקטגוריה הכי דומה לטקסט נתון
  */
-// backend/utils/geminiClient.js (הפונקציה המתוקנת)
-
 export async function findClosestCategory(text) {
-    // 🚨 תיקון: קוראים רק פעם אחת, משתמשים ב-await, ושומרים את התוצאה
+    //  תיקון: קוראים רק פעם אחת, משתמשים ב-await, ושומרים את התוצאה
     const categories = await getCategories(); 
     
     // אימות קלט (הקטגוריות צריכות להיות מערך)
@@ -109,8 +96,8 @@ export async function findClosestCategory(text) {
         let bestMatch = { category: null, score: -1, distance: -1 };
         
         // חיפוש הקטגוריה הכי דומה
-        for (const category of categories) { // 🚨 תיקון: עוברים בלולאה על המערך categories
-            const categoryVector = category.gemini_embedding; // 🚨 ודא שאתה משתמש בשם העמודה הנכון (gemini_embedding)!
+        for (const category of categories) { 
+            const categoryVector = category.gemini_embedding; 
             const similarity = compareVectors(textVector, categoryVector);
             
             if (similarity > bestMatch.score) {
@@ -130,10 +117,8 @@ export async function findClosestCategory(text) {
         throw new Error("נכשל במציאת קטגוריה מתאימה");
     }
 }
-/**
- * יוצרת תגובה טקסטואלית כללית באמצעות Gemini.
- * @param {string} prompt - הפרומפט שיש לשלוח למודל.
- * @returns {Promise<string>} - התשובה הטקסטואלית של ה-AI.
+/*
+ יוצרת תגובה טקסטואלית כללית באמצעות Gemini.
  */
 export async function generateAIResponse(prompt) {
     // נשתמש ב-fetch API ישירות מכיוון שזה מה שמומש לך
