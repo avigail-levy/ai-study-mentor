@@ -1,20 +1,26 @@
-# Use Node.js LTS
-FROM node:18-alpine
+# שלב 1: בניית התלויות
+FROM node:20-alpine AS dependencies
+WORKDIR /app
+COPY package*.json ./
+# התקנת תלויות Production בלבד
+RUN npm ci --omit=dev
 
-# Set working directory
+# שלב 2: יצירת אימג' Production סופי
+FROM node:20-alpine AS final
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# העתקת התלויות מהשלב הקודם
+COPY --from=dependencies /app/node_modules ./node_modules
 
-# Install dependencies
-RUN npm install
-
-# Copy all backend files
+# העתקת קוד המקור
 COPY . .
 
-# Expose port
+# יצירת משתמש לא-שורשי והעברת בעלות
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# חשיפת הפורט
 EXPOSE 5000
 
-# Start the server with nodemon for development
+# הפקודה להרצת השרת
 CMD ["node", "server.js"]

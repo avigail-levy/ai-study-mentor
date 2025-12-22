@@ -32,6 +32,8 @@ jest.unstable_mockModule('../utils/pathfinding.js', () => ({
 // --- טעינה דינמית של האפליקציה וה-Mocks ---
 const { app } = await import('../server.js');
 const dbService = await import('../models/dbService.js');
+const assistant = await import('../utils/assistant.js');
+const pathfinding = await import('../utils/pathfinding.js');
 
 describe('API Integration Tests', () => {
     
@@ -85,6 +87,50 @@ describe('API Integration Tests', () => {
             expect(response.statusCode).not.toBe(404); 
             expect(response.statusCode).toBe(200);
             expect(response.body).toHaveProperty('userId', mockUserId);
+        });
+    });
+
+    describe('POST /api/voice-add', () => {
+        it('should process transcript and return items', async () => {
+            // Arrange
+            const mockItems = ['חלב', 'לחם'];
+            assistant.extractProductsFromText.mockResolvedValue(mockItems);
+            dbService.addItemToRawList.mockResolvedValue(1);
+
+            // Act
+            // הערה: וודא שהנתיב כאן תואם לנתיב שהגדרת ב-shoppingRoutes.js עבור addVoiceItems
+            const response = await request(app)
+                .post('/api/voice-add')
+                .send({ userId: 1, transcript: 'חלב ולחם' });
+
+            // Assert
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual(expect.objectContaining({ success: true, items: mockItems }));
+        });
+    });
+
+    describe('POST /api/calculate-path', () => {
+        it('should calculate path and return sorted list', async () => {
+            // Arrange
+            const userId = 1;
+            // מדמים שאין פריטים חדשים למיפוי (כדי לפשט את הבדיקה)
+            dbService.getUnmappedItems.mockResolvedValue([]); 
+            // מדמים שיש פריטים שכבר מופו ב-DB
+            const mockMappedItems = [{ item_id: 10, r: 0, c: 0 }];
+            dbService.getMappedItemsForPathfinding.mockResolvedValue(mockMappedItems);
+            // מדמים את תוצאת האלגוריתם (כדי לוודא שהקונטרולר משתמש בו)
+            pathfinding.calculateShortestPath.mockReturnValue({ '10': 1 });
+            // מדמים את הרשימה הסופית שה-DB מחזיר
+            const mockSortedList = [{ item_name: 'Apple', calculated_order: 1 }];
+            dbService.getSortedShoppingList.mockResolvedValue(mockSortedList);
+
+            // Act
+            const response = await request(app).post('/api/calculate-path').send({ userId });
+
+            // Assert
+            expect(response.statusCode).toBe(200);
+            expect(response.body.list).toEqual(mockSortedList);
+            expect(dbService.updateItemOrder).toHaveBeenCalledWith(10, 1);
         });
     });
 });

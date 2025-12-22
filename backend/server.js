@@ -37,10 +37,11 @@ app.use(express.json());
 // בדיקת חיבור ל-DB
 app.get("/db-test", async (req, res) => {
   try {
-    const result = await pool.query("SELECT NOW()");
-    res.json(result.rows[0]);
+    const result = await pool.query("SELECT * FROM user_shopping_items where user_id=4");
+    res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: "DB connection failed" });
+    console.error("DB Connection Error:", err);
+    res.status(500).json({ error: "DB connection failed", details: err.message });
   }
 });
 

@@ -1,7 +1,6 @@
-# התעלם מספריית החבילות המותקנות מקומית (node_modules)
 node_modules
-# התעלם מתיקיית ה-Build המקומית (אם קיימת)
-build
 dist
-# התעלם מהקונטיינרים שהרצתם
-.docker
+.env
+.git
+.DS_Store
+
