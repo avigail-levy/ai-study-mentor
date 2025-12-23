@@ -74,12 +74,17 @@ pipeline {
 
         // שלב ה-Setup Dependencies הוסר כי הוא כבר חלק מה-Build ב-Dockerfile
 
-        stage('Run Tests') {
+       stage('Run Tests') {
     steps {
         script {
+            echo 'Freeing up memory: Stopping Frontend...'
+            sh 'docker stop finalaiproject-frontend-1 || true' // כיבוי זמני של הפרונטנד
+            
             echo 'Running Tests...'
-            // הפקודה הזו מקימה קונטיינר זמני רק לטסטים ומוחקת אותו בסוף (--rm)
             sh 'docker-compose -f ${COMPOSE_FILE} run -T --rm backend npm test'
+            
+            echo 'Restarting Frontend...'
+            sh 'docker-compose -f ${COMPOSE_FILE} up -d frontend' // החזרת הפרונטנד אחרי הטסטים
         }
     }
 }
