@@ -17,9 +17,8 @@ pipeline {
             steps {
                 script {
                     echo 'Cleaning up previous environment and volumes...'
-                    // -v מוחק את ה-Volumes (בסיס הנתונים) כדי להתחיל נקי לגמרי
+                    // -v מוחק את ה-Volumes כדי להתחיל נקי ולמנוע שגיאות Unhealthy
                     sh 'docker-compose -f ${COMPOSE_FILE} down -v || true'
-                    // וידוא מחיקה של הקונטיינר למקרה שהוא נשאר "יתום"
                     sh 'docker rm -f postgres-db || true'
                 }
             }
@@ -57,6 +56,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building and starting Docker containers...'
+                    // הבנייה כבר כוללת npm install בתוך ה-Dockerfile של ה-Backend
                     sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'
                 }
             }
@@ -66,26 +66,19 @@ pipeline {
             steps {
                 script {
                     echo 'Waiting for Database to be ready...'
-                    // זמן המתנה משמעותי כדי לוודא שבסיס הנתונים סיים את ה-initialization
+                    // זמן חסד למסד הנתונים לעלות ללא הפרעה
                     sleep 20
                 }
             }
         }
 
-        stage('Setup Dependencies') {
-            steps {
-                script {
-                    echo 'Ensuring dependencies are installed...'
-                    // run --rm מבטיח שהפקודה תרוץ גם אם הקונטיינר הראשי לא יציב
-                    sh 'docker-compose -f ${COMPOSE_FILE} run -T --rm -u root backend npm install'
-                }
-            }
-        }
+        // שלב ה-Setup Dependencies הוסר כי הוא כבר חלק מה-Build ב-Dockerfile
 
         stage('Run Tests') {
             steps {
                 script {
                     echo 'Running Integration & Unit Tests...'
+                    // הרצה ישירות על הקונטיינר הקיים
                     sh 'docker-compose -f ${COMPOSE_FILE} exec -T backend npm test'
                 }
             }
