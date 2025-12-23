@@ -86,24 +86,15 @@ sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'                }
             }
         }
 
-        stage('Build & Push Images') {
-            steps {
-                script {
-                    echo 'Building Production Images...'
-                    // בניית אימג'ים סופיים עם תיוג של מספר ה-Build
-                    sh "docker build -t ${REGISTRY_URL}/${BACKEND_IMAGE}:${BUILD_NUMBER} ./backend"
-                    sh "docker build -t ${REGISTRY_URL}/${FRONTEND_IMAGE}:${BUILD_NUMBER} ./frontend"
-                    
-                    // דחיפה ל-Registry (בטלי את ההערה אם הגדרת Credentials בג'נקינס)
-                    /*
-                    withDockerRegistry(credentialsId: DOCKER_CREDENTIALS_ID, url: '') {
-                        sh "docker push ${REGISTRY_URL}/${BACKEND_IMAGE}:${BUILD_NUMBER}"
-                        sh "docker push ${REGISTRY_URL}/${FRONTEND_IMAGE}:${BUILD_NUMBER}"
-                    }
-                    */
-                }
-            }
+      stage('Build & Start Environment') {
+    steps {
+        script {
+            echo 'Building and starting Docker containers...'
+            // וודאי שיש כאן מקף בין ה-docker ל-compose
+            sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'
         }
+    }
+}
     }
 
     post {
