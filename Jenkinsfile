@@ -39,8 +39,7 @@ pipeline {
                     echo 'Building and starting Docker containers...'
                     // בנייה והרצה של הסביבה
                     // במקום docker-compose
-               sh 'docker compose -f ${COMPOSE_FILE} up -d --build'
-                }
+sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'                }
             }
         }
 
