@@ -33,7 +33,7 @@ services:
     networks:
       - ai-network
     # שימוש ב-npm start הוא הדרך היציבה ביותר למנוע לולאת קריסות
-    command: npm run dev
+    command: npm start
     restart: unless-stopped
 
   frontend:

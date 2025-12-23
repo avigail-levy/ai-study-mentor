@@ -2,10 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // הגדרת נתיבים כדי שג'נקינס יזהה את docker-compose
         PATH = "/usr/local/bin:/usr/bin:/bin:${env.PATH}"
         DOCKER_HOST = "tcp://host.docker.internal:2375"        
-        // הגדרות כלליות
         COMPOSE_FILE = 'docker-compose.yml'
         REGISTRY_URL = 'docker.io/mirispigelman' 
         BACKEND_IMAGE = 'ai-study-mentor-backend'
@@ -16,10 +14,10 @@ pipeline {
         stage('Cleanup Workspace') {
             steps {
                 script {
-                    echo 'Cleaning up previous environment and volumes...'
-                    // -v מוחק את ה-Volumes כדי להתחיל נקי ולמנוע שגיאות Unhealthy
-                    sh 'docker-compose -f ${COMPOSE_FILE} down -v || true'
-                    sh 'docker rm -f postgres-db || true'
+                    echo 'Cleaning up environment and clearing old containers...'
+                    // ניקוי יסודי כדי למנוע התנגשויות של קונטיינרים קודמים
+                    sh 'docker-compose -f ${COMPOSE_FILE} down -v --remove-orphans || true'
+                    sh 'docker system prune -f || true'
                 }
             }
         }
@@ -33,9 +31,8 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 script {
-                    echo 'Creating .env file from Jenkins Credentials...'
+                    echo 'Creating .env file...'
                     sh 'mkdir -p backend'
-                    
                     withCredentials([
                         string(credentialsId: 'DATABASE_URL', variable: 'DB_URL'),
                         string(credentialsId: 'GEMINI_API_KEY', variable: 'AI_KEY'),
@@ -47,52 +44,45 @@ pipeline {
                             echo "PORT=${APP_PORT}" >> backend/.env
                         """
                     }
-                    echo 'Environment file created successfully.'
                 }
             }
         }
 
-        stage('Build & Start Environment') {
+      stage('Build & Start Environment') {
             steps {
                 script {
-                    echo 'Building and starting Docker containers...'
-                    // הבנייה כבר כוללת npm install בתוך ה-Dockerfile של ה-Backend
-                    sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'
+                    echo 'Force cleaning and rebuilding...'
+                    sh 'docker-compose down -v || true'
+                    // שימוש ב-force-recreate מבטיח שלא נשארות שאריות מהקריסה הקודמת
+                    sh 'docker-compose up -d --build --force-recreate'
+                    
+                    echo 'Waiting 45 seconds for Backend to be fully Up and Running...'
+                    sleep 45 
                 }
             }
         }
 
-        stage('Wait for Database') {
-            steps {
-                script {
-                    echo 'Waiting for Database to be ready...'
-                    // זמן חסד למסד הנתונים לעלות ללא הפרעה
-                    sleep 20
-                }
-            }
-        }
-
-        // שלב ה-Setup Dependencies הוסר כי הוא כבר חלק מה-Build ב-Dockerfile
-
-     stage('Run Tests') {
+        stage('Run Tests') {
             steps {
                 script {
                     echo 'Freeing up memory: Stopping Frontend...'
-                    sh 'docker stop finalaiproject-frontend-1 || true' 
+                    sh 'docker stop finalaiproject-frontend-1 || true'
                     
-                    echo 'Running Tests inside the existing backend container...'
-                    // שימי לב: שינינו ל-exec. זה פותר את בעיית ה-ENOENT
-                    sh 'docker-compose -f ${COMPOSE_FILE} exec -T backend npm test'
+                    echo 'Verifying container status before exec...'
+                    sh 'docker ps' // זה ידפיס ללוג אם הקונטיינר ב-Up או ב-Restarting
+                    
+                    echo 'Running Tests...'
+                    sh 'docker-compose exec -T backend npm test'
                     
                     echo 'Restarting Frontend...'
-                    sh 'docker-compose -f ${COMPOSE_FILE} up -d frontend'
+                    sh 'docker-compose up -d frontend'
                 }
             }
         }
+
         stage('Test Coverage') {
             steps {
                 script {
-                    echo 'Checking Code Coverage...'
                     sh 'docker-compose -f ${COMPOSE_FILE} exec -T backend npm run test:coverage'
                 }
             }
@@ -101,7 +91,6 @@ pipeline {
         stage('Build Production Images') {
             steps {
                 script {
-                    echo 'Building Production Images...'
                     sh "docker build -t ${REGISTRY_URL}/${BACKEND_IMAGE}:${BUILD_NUMBER} ./backend"
                     sh "docker build -t ${REGISTRY_URL}/${FRONTEND_IMAGE}:${BUILD_NUMBER} ./frontend"
                 }
@@ -110,11 +99,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo 'Pipeline finished successfully! ✅'
-        }
-        failure {
-            echo 'Pipeline failed. ❌ Check logs for details.'
-        }
+        success { echo 'Pipeline Success! ✅' }
+        failure { echo 'Pipeline Failed. ❌' }
     }
 }
