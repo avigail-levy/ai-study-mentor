@@ -76,15 +76,14 @@ pipeline {
         }
 
         stage('Setup Dependencies') {
-            steps {
-                script {
-                    echo 'Ensuring dependencies are installed inside container...'
-                    // התקנת NPM בתוך הקונטיינר ותיקון הרשאות
-                    sh 'docker-compose -f ${COMPOSE_FILE} exec -T -u root backend npm install'
-                    sh 'docker-compose -f ${COMPOSE_FILE} exec -T -u root backend chown -R appuser:appgroup /app/node_modules'
-                }
-            }
+    steps {
+        script {
+            echo 'Ensuring dependencies are installed...'
+            // שימוש ב-run במקום exec מאפשר להריץ פקודה על אימג' גם אם הקונטיינר הנוכחי למטה
+            sh 'docker-compose -f ${COMPOSE_FILE} run -T --rm -u root backend npm install'
         }
+    }
+}
 
         stage('Run Tests') {
             steps {
