@@ -2,6 +2,8 @@ pipeline {
     agent any
 
     environment {
+
+    PATH = "/usr/local/bin:/usr/bin:/bin:${env.PATH}"    
         // הגדרות כלליות
         COMPOSE_FILE = 'docker-compose.yml'
         REGISTRY_URL = 'docker.io/your-username' // החליפי בשם המשתמש שלך ב-DockerHub
@@ -36,7 +38,8 @@ pipeline {
                 script {
                     echo 'Building and starting Docker containers...'
                     // בנייה והרצה של הסביבה
-                    sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'
+                    // במקום docker-compose
+               sh 'docker compose -f ${COMPOSE_FILE} up -d --build'
                 }
             }
         }
