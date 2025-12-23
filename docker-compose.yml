@@ -1,5 +1,4 @@
 services:
-  # שיניתי ל-db כדי שיתאים ל-depends_on ול-DATABASE_URL
   db:
     image: pgvector/pgvector:pg16
     container_name: postgres-db
@@ -18,12 +17,12 @@ services:
 
   backend:
     build: ./backend
+    container_name: finalaiproject-backend-1
     ports:
       - "5000:5000"
     env_file:
       - ./backend/.env
     environment:
-      # שים לב שהכתובת כאן משתמשת בשם השירות db
       - DATABASE_URL=postgres://postgres:password@db:5432/vector_db
       - PORT=5000
     volumes:
@@ -33,11 +32,13 @@ services:
       - db
     networks:
       - ai-network
-    command: ["npx", "-y", "nodemon", "-L", "server.js"]
+    # שימוש ב-npm start הוא הדרך היציבה ביותר למנוע לולאת קריסות
+    command: npm start
     restart: unless-stopped
 
   frontend:
     build: ./frontend
+    container_name: finalaiproject-frontend-1
     ports:
       - "3000:80"
     depends_on:
