@@ -75,14 +75,14 @@ pipeline {
         // שלב ה-Setup Dependencies הוסר כי הוא כבר חלק מה-Build ב-Dockerfile
 
         stage('Run Tests') {
-            steps {
-                script {
-                    echo 'Running Integration & Unit Tests...'
-                    // הרצה ישירות על הקונטיינר הקיים
-                    sh 'docker-compose -f ${COMPOSE_FILE} exec -T backend npm test'
-                }
-            }
+    steps {
+        script {
+            echo 'Running Tests...'
+            // הפקודה הזו מקימה קונטיינר זמני רק לטסטים ומוחקת אותו בסוף (--rm)
+            sh 'docker-compose -f ${COMPOSE_FILE} run -T --rm backend npm test'
         }
+    }
+}
         
         stage('Test Coverage') {
             steps {
