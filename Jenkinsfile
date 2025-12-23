@@ -74,21 +74,21 @@ pipeline {
 
         // שלב ה-Setup Dependencies הוסר כי הוא כבר חלק מה-Build ב-Dockerfile
 
-       stage('Run Tests') {
-    steps {
-        script {
-            echo 'Freeing up memory: Stopping Frontend...'
-            sh 'docker stop finalaiproject-frontend-1 || true' // כיבוי זמני של הפרונטנד
-            
-            echo 'Running Tests...'
-            sh 'docker-compose -f ${COMPOSE_FILE} run -T --rm backend npm test'
-            
-            echo 'Restarting Frontend...'
-            sh 'docker-compose -f ${COMPOSE_FILE} up -d frontend' // החזרת הפרונטנד אחרי הטסטים
+     stage('Run Tests') {
+            steps {
+                script {
+                    echo 'Freeing up memory: Stopping Frontend...'
+                    sh 'docker stop finalaiproject-frontend-1 || true' 
+                    
+                    echo 'Running Tests inside the existing backend container...'
+                    // שימי לב: שינינו ל-exec. זה פותר את בעיית ה-ENOENT
+                    sh 'docker-compose -f ${COMPOSE_FILE} exec -T backend npm test'
+                    
+                    echo 'Restarting Frontend...'
+                    sh 'docker-compose -f ${COMPOSE_FILE} up -d frontend'
+                }
+            }
         }
-    }
-}
-        
         stage('Test Coverage') {
             steps {
                 script {
