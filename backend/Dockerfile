@@ -27,25 +27,29 @@
 # שימוש בגרסת Node עדכנית וקלה
 FROM node:20-alpine
 
+# התקנת כלים בסיסיים שנדרשים לעיתים לבניית תלויות
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
-# העתקת קבצי התלות והתקנתם
+# העתקת קבצי התלות
 COPY package*.json ./
-# התקנת כל התלויות (כולל devDependencies לטסטים)
+
+# התקנת כל התלויות (כולל אלו של הטסטים)
 RUN npm install
 
-# העתקת קוד המקור
+# העתקת שאר קוד המקור
 COPY . .
 
-# יצירת משתמש לא-שורשי והעברת בעלות
-# Ensure the appuser owns the application directory
+# יצירת משתמש מאובטח והענקת הרשאות מלאות לתיקיית העבודה
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
     chown -R appuser:appgroup /app
 
+# חשוב: ביצוע NPM Install נוסף אם יש צורך בשינוי בעלות, 
+# או פשוט לוודא שהמשתמש יכול לכתוב לתיקייה
 USER appuser
 
-# חשיפת הפורט
 EXPOSE 5000
 
-# הפקודה להרצת השרת
+# שימוש ב-NPM START כברירת מחדל
 CMD ["npm", "start"]
