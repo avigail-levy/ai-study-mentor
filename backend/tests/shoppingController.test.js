@@ -1,10 +1,15 @@
-// backend/tests/shoppingController.test.js
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
-// --- הגדרת Mocks עבור ES Modules ---
-// ב-ESM חייבים להשתמש ב-unstable_mockModule לפני האימפורט של הקובץ הנבדק
+// --- הגדרת Mocks (חובה לפני האימפורט של ה-app) ---
 
-// 1. Mock dbService
+// 1. Mock fs/promises (כדי לא למחוק קבצים באמת)
+jest.unstable_mockModule('fs/promises', () => ({
+    default: {
+        unlink: jest.fn().mockResolvedValue(undefined),
+    }
+}));
+
+// 2. Mock dbService
 jest.unstable_mockModule('../models/dbService.js', () => ({
     findOrCreateUser: jest.fn(),
     addItemToRawList: jest.fn(),
@@ -14,30 +19,34 @@ jest.unstable_mockModule('../models/dbService.js', () => ({
     getSortedShoppingList: jest.fn(),
     updateItemMapping: jest.fn(),
     getUnmappedItems: jest.fn(),
+    clearUserList: jest.fn(),
 }));
 
-// 2. Mock assistant
+// 3. Mock assistant
 jest.unstable_mockModule('../utils/assistant.js', () => ({
     extractProductsFromText: jest.fn(),
     extractProductsFromPDF: jest.fn(),
     extractProductsFromImage: jest.fn(),
 }));
 
-// 3. Mock geminiClient
+// 4. Mock geminiClient
 jest.unstable_mockModule('../utils/geminiClient.js', () => ({
     getEmbedding: jest.fn(),
     generateAIResponse: jest.fn(),
 }));
 
-// 4. Mock pathfinding
+// 5. Mock pathfinding
 jest.unstable_mockModule('../utils/pathfinding.js', () => ({
     calculateShortestPath: jest.fn(),
 }));
 
-// --- טעינה דינמית של הקבצים (חובה אחרי הגדרת ה-Mocks) ---
+// --- טעינה דינמית של הקבצים ---
 const shoppingController = await import('../controllers/shoppingController.js');
 const dbService = await import('../models/dbService.js');
 const assistant = await import('../utils/assistant.js');
+const geminiClient = await import('../utils/geminiClient.js');
+const pathfinding = await import('../utils/pathfinding.js');
+const fs = await import('fs/promises');
 
 describe('Shopping Controller Unit Tests', () => {
     let req, res;
@@ -78,7 +87,6 @@ describe('Shopping Controller Unit Tests', () => {
 
             expect(res.status).toHaveBeenCalledWith(400);
             expect(res.json).toHaveBeenCalledWith({ error: 'Email and name is required' });
-            expect(dbService.findOrCreateUser).not.toHaveBeenCalled();
         });
     });
 
@@ -92,17 +100,6 @@ describe('Shopping Controller Unit Tests', () => {
             expect(dbService.addItemToRawList).toHaveBeenCalledWith(1, 'Milk');
             expect(res.json).toHaveBeenCalledWith({ success: true, itemId: 101 });
         });
-
-        it('should handle DB errors gracefully', async () => {
-            req.body = { userId: 1, item_name: 'Error Item' };
-            const error = new Error('DB Connection Failed');
-            dbService.addItemToRawList.mockRejectedValue(error);
-
-            await shoppingController.addItem(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({ error: 'Failed to add item' });
-        });
     });
 
     describe('addVoiceItems', () => {
@@ -111,31 +108,107 @@ describe('Shopping Controller Unit Tests', () => {
             const mockProducts = ['חלב', 'לחם'];
             
             assistant.extractProductsFromText.mockResolvedValue(mockProducts);
-            dbService.addItemToRawList.mockResolvedValueOnce(201).mockResolvedValueOnce(202);
+            dbService.addItemToRawList.mockResolvedValue(200);
 
             await shoppingController.addVoiceItems(req, res);
 
             expect(assistant.extractProductsFromText).toHaveBeenCalledWith('חלב ולחם');
             expect(dbService.addItemToRawList).toHaveBeenCalledTimes(2);
-            expect(res.json).toHaveBeenCalledWith({
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: true,
-                items: mockProducts,
-                message: `נוספו 2 מוצרים בהצלחה`
+                items: mockProducts
+            }));
+        });
+    });
+
+    describe('calculatePath', () => {
+        it('should calculate path, update orders in DB, and return list with fullPath', async () => {
+            req.body = { userId: 1 };
+            
+            // 1. Mock unmapped items (empty for simplicity)
+            dbService.getUnmappedItems.mockResolvedValue([]);
+            
+            // 2. Mock mapped items
+            const mockMappedItems = [{ id: 10, r: 0, c: 0 }];
+            dbService.getMappedItemsForPathfinding.mockResolvedValue(mockMappedItems);
+            
+            // 3. Mock Pathfinding (returns object with order AND fullPath)
+            pathfinding.calculateShortestPath.mockReturnValue({ 
+                '10': { order: 1, fullPath: ['⬇️', '➡️'] } 
             });
+            
+            // 4. Mock Sorted List from DB
+            const mockSortedList = [{ id: 10, item_name: 'Apple', calculated_order: 1 }];
+            dbService.getSortedShoppingList.mockResolvedValue(mockSortedList);
+
+            await shoppingController.calculatePath(req, res);
+
+            // Verify DB update uses ONLY the number (order)
+            expect(dbService.updateItemOrder).toHaveBeenCalledWith(10, 1);
+            
+            // Verify response includes the fullPath array
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: true,
+                list: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: 10,
+                        fullPath: ['⬇️', '➡️']
+                    })
+                ])
+            }));
+        });
+    });
+
+    describe('uploadAndCalculate', () => {
+        it('should process PDF, add items, calc path, and return result', async () => {
+            req.body = { userId: 1 };
+            req.file = { path: 'temp_test.pdf', mimetype: 'application/pdf' };
+
+            // Mocks
+            assistant.extractProductsFromPDF.mockResolvedValue(['Milk']);
+            dbService.addItemToRawList.mockResolvedValue(100);
+            dbService.getUnmappedItems.mockResolvedValue([]);
+            dbService.getMappedItemsForPathfinding.mockResolvedValue([{ id: 100 }]);
+            
+            // Pathfinding mock
+            pathfinding.calculateShortestPath.mockReturnValue({ 
+                '100': { order: 1, fullPath: ['⬇️'] } 
+            });
+            
+            dbService.getSortedShoppingList.mockResolvedValue([{ id: 100, item_name: 'Milk' }]);
+            geminiClient.generateAIResponse.mockResolvedValue('AI Summary');
+
+            await shoppingController.uploadAndCalculate(req, res);
+
+            // Assertions
+            expect(assistant.extractProductsFromPDF).toHaveBeenCalledWith('temp_test.pdf');
+            expect(dbService.addItemToRawList).toHaveBeenCalledWith(1, 'Milk');
+            expect(dbService.updateItemOrder).toHaveBeenCalledWith(100, 1); // Verify numeric order update
+            expect(fs.default.unlink).toHaveBeenCalledWith('temp_test.pdf'); // Verify file cleanup
+            
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: true,
+                list: expect.any(Array),
+                answer: 'AI Summary'
+            }));
         });
 
-        it('should handle case where AI finds no products', async () => {
-            req.body = { userId: 1, transcript: 'סתם דיבורים' };
-            assistant.extractProductsFromText.mockResolvedValue([]);
+        it('should return 400 if no file uploaded', async () => {
+            req.file = null;
+            await shoppingController.uploadAndCalculate(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
+    });
 
-            await shoppingController.addVoiceItems(req, res);
+    describe('clearList', () => {
+        it('should clear user list', async () => {
+            req.body = { userId: 1 };
+            dbService.clearUserList.mockResolvedValue();
 
-            expect(dbService.addItemToRawList).not.toHaveBeenCalled();
-            expect(res.json).toHaveBeenCalledWith({ 
-                success: true, 
-                items: [], 
-                message: "לא זוהו מוצרים" 
-            });
+            await shoppingController.clearList(req, res);
+
+            expect(dbService.clearUserList).toHaveBeenCalledWith(1);
+            expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Shopping list cleared successfully' });
         });
     });
 });

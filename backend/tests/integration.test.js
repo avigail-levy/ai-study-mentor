@@ -13,6 +13,8 @@ jest.unstable_mockModule('../models/dbService.js', () => ({
     getSortedShoppingList: jest.fn(),
     updateItemMapping: jest.fn(),
     getUnmappedItems: jest.fn(),
+    clearUserList: jest.fn(),
+    getCategories: jest.fn(),
 }));
 
 // 2. Mock AI Services - כדי לא לפנות ל-Gemini
@@ -33,6 +35,7 @@ jest.unstable_mockModule('../utils/pathfinding.js', () => ({
 const { app } = await import('../server.js');
 const dbService = await import('../models/dbService.js');
 const assistant = await import('../utils/assistant.js');
+const geminiClient = await import('../utils/geminiClient.js');
 const pathfinding = await import('../utils/pathfinding.js');
 
 describe('API Integration Tests', () => {
@@ -43,94 +46,127 @@ describe('API Integration Tests', () => {
 
     describe('POST /api/list/add-item', () => {
         it('should add an item successfully and return 200', async () => {
-            // Arrange: הכנת התשובה המדומה מה-DB
+            // Arrange
             const mockItemId = 123;
             dbService.addItemToRawList.mockResolvedValue(mockItemId);
 
-            // Act: שליחת בקשת HTTP אמיתית לשרת (ללא הרצת השרת בפועל)
+            // Act
             const response = await request(app)
                 .post('/api/list/add-item')
                 .send({ userId: 1, item_name: 'Banana' })
                 .set('Content-Type', 'application/json');
 
-            // Assert: בדיקת התשובה
+            // Assert
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual({ success: true, itemId: mockItemId });
-            
-            // וידוא שהקונטרולר קרא לפונקציה הנכונה ב-Service
             expect(dbService.addItemToRawList).toHaveBeenCalledWith(1, 'Banana');
         });
 
         it('should return 400 if parameters are missing', async () => {
             const response = await request(app)
                 .post('/api/list/add-item')
-                .send({ userId: 1 }); // חסר item_name
+                .send({ userId: 1 }); 
 
             expect(response.statusCode).toBe(400);
             expect(response.body).toHaveProperty('error');
         });
     });
 
-    // הנחה: הנתיב ללוגין הוא /api/login או /api/auth/login. 
-    // אם הנתיב שונה אצלך ב-shoppingRoutes, יש לעדכן כאן.
     describe('POST /api/auth/login', () => {
         it('should authenticate user', async () => {
             const mockUserId = 55;
             dbService.findOrCreateUser.mockResolvedValue(mockUserId);
 
-            // נסה את הנתיב הסביר ביותר, עדכן אם צריך
             const response = await request(app)
                 .post('/api/auth/login') 
                 .send({ email: 'test@integration.com', name: 'Integration User' });
 
-            // אם הנתיב לא קיים (404), הבדיקה תיכשל ותדע שצריך לעדכן את ה-URL בבדיקה
-            expect(response.statusCode).not.toBe(404); 
             expect(response.statusCode).toBe(200);
             expect(response.body).toHaveProperty('userId', mockUserId);
         });
     });
 
-    describe('POST /api/voice-add', () => {
+    describe('POST /api/list/add-voice-items', () => {
         it('should process transcript and return items', async () => {
-            // Arrange
-            const mockItems = ['חלב', 'לחם'];
+            const mockItems = ['milk', 'bread'];
             assistant.extractProductsFromText.mockResolvedValue(mockItems);
             dbService.addItemToRawList.mockResolvedValue(1);
 
-            // Act
-            // הערה: וודא שהנתיב כאן תואם לנתיב שהגדרת ב-shoppingRoutes.js עבור addVoiceItems
             const response = await request(app)
-                .post('/api/voice-add')
-                .send({ userId: 1, transcript: 'חלב ולחם' });
+                .post('/api/list/add-voice-items')
+                .send({ userId: 1, transcript: 'milk and bread' });
 
-            // Assert
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual(expect.objectContaining({ success: true, items: mockItems }));
+            expect(dbService.addItemToRawList).toHaveBeenCalledTimes(2);
         });
     });
 
     describe('POST /api/calculate-path', () => {
         it('should calculate path and return sorted list', async () => {
-            // Arrange
             const userId = 1;
-            // מדמים שאין פריטים חדשים למיפוי (כדי לפשט את הבדיקה)
             dbService.getUnmappedItems.mockResolvedValue([]); 
-            // מדמים שיש פריטים שכבר מופו ב-DB
             const mockMappedItems = [{ item_id: 10, r: 0, c: 0 }];
             dbService.getMappedItemsForPathfinding.mockResolvedValue(mockMappedItems);
-            // מדמים את תוצאת האלגוריתם (כדי לוודא שהקונטרולר משתמש בו)
-            pathfinding.calculateShortestPath.mockReturnValue({ '10': 1 });
-            // מדמים את הרשימה הסופית שה-DB מחזיר
-            const mockSortedList = [{ item_name: 'Apple', calculated_order: 1 }];
+            
+            // Mock pathfinding to return object with order and fullPath
+            pathfinding.calculateShortestPath.mockReturnValue({ '10': { order: 1, fullPath: ['⬇️'] } });
+            
+            const mockSortedList = [{ id: 10, item_name: 'Apple', calculated_order: 1 }];
             dbService.getSortedShoppingList.mockResolvedValue(mockSortedList);
 
-            // Act
             const response = await request(app).post('/api/calculate-path').send({ userId });
 
-            // Assert
             expect(response.statusCode).toBe(200);
-            expect(response.body.list).toEqual(mockSortedList);
+            // בדיקה שהרשימה כוללת את fullPath שהקונטרולר ממזג
+            expect(response.body.list).toEqual([{ 
+                id: 10, 
+                item_name: 'Apple', 
+                calculated_order: 1, 
+                fullPath: ['⬇️'] 
+            }]);
+            // בדיקה שהקונטרולר שולח רק את המספר (order) ל-DB
             expect(dbService.updateItemOrder).toHaveBeenCalledWith(10, 1);
+        });
+    });
+
+    describe('POST /api/list/clear', () => {
+        it('should clear user list', async () => {
+            dbService.clearUserList.mockResolvedValue();
+
+            const response = await request(app)
+                .post('/api/list/clear')
+                .send({ userId: 1 });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(dbService.clearUserList).toHaveBeenCalledWith(1);
+        });
+    });
+
+    describe('POST /api/upload-and-calculate', () => {
+        it('should process uploaded PDF and return calculated path', async () => {
+            const userId = 1;
+            const mockExtracted = ['Milk'];
+            
+            assistant.extractProductsFromPDF.mockResolvedValue(mockExtracted);
+            dbService.addItemToRawList.mockResolvedValue(1);
+            dbService.getUnmappedItems.mockResolvedValue([]);
+            dbService.getMappedItemsForPathfinding.mockResolvedValue([{ item_id: 1, r: 0, c: 0 }]);
+            pathfinding.calculateShortestPath.mockReturnValue({ '1': { order: 1, fullPath: [] } });
+            dbService.getSortedShoppingList.mockResolvedValue([{ id: 1, item_name: 'Milk', calculated_order: 1 }]);
+            geminiClient.generateAIResponse.mockResolvedValue('AI Summary');
+
+            const response = await request(app)
+                .post('/api/upload-and-calculate')
+                .field('userId', userId)
+                .attach('file', Buffer.from('dummy pdf'), { filename: 'test.pdf', contentType: 'application/pdf' });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(assistant.extractProductsFromPDF).toHaveBeenCalled();
+            expect(response.body.list).toHaveLength(1);
+            expect(response.body.answer).toBe('AI Summary');
         });
     });
 });

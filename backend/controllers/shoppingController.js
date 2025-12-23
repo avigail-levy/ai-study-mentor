@@ -128,7 +128,7 @@ export const calculatePath = async (req, res) => {
 
         // 4. עדכון הסדר המחושב ב-DB (ה-DB שומר רק את המספר, לא את החץ)
         for (const itemId in calculatedOrderMap) {
-            // calculatedOrderMap[itemId] הוא עכשיו אובייקט: { order: X, direction: '➡️' }
+            // תיקון קריטי: שולחים רק את ה-order (מספר) לפונקציית ה-DB
             await updateItemOrder(parseInt(itemId), calculatedOrderMap[itemId].order);
         }
 
@@ -137,11 +137,11 @@ export const calculatePath = async (req, res) => {
 
         // 6. מיזוג החצים לתוך הרשימה הסופית (בזיכרון, בלי לשמור ב-DB)
         const listWithArrows = finalSortedList.map(item => {
-            // אנחנו משתמשים ב-ID כדי למצוא את החץ שחושב באלגוריתם בשלב 3
-            const directionInfo = calculatedOrderMap[item.id] || { direction: '⬆️' };
+            // אנחנו משתמשים ב-ID כדי למצוא את המסלול שחושב באלגוריתם
+            const pathInfo = calculatedOrderMap[item.id] || { fullPath: [] };
             return {
                 ...item,
-                direction: directionInfo.direction
+                fullPath: pathInfo.fullPath // מעבירים את המערך המלא ל-Frontend
             };
         });
 
@@ -156,6 +156,7 @@ export const calculatePath = async (req, res) => {
     }
 };
 export const uploadAndCalculate = async (req, res) => {
+    console.log("uploadAndCalculate");
      if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
@@ -213,11 +214,21 @@ export const uploadAndCalculate = async (req, res) => {
             if (mappedItems.length > 0) {
                 const calculatedOrderMap = calculateShortestPath(mappedItems);
                 for (const itemId in calculatedOrderMap) {
-                    await updateItemOrder(parseInt(itemId), calculatedOrderMap[itemId]);
+                    // תיקון קריטי: חילוץ ה-order מתוך האובייקט למניעת שגיאת DB
+                    await updateItemOrder(parseInt(itemId), calculatedOrderMap[itemId].order);
                 }
             }
     
             const finalSortedList = await getSortedShoppingList(userId);
+            
+            // מיזוג המסלול המלא לתוך הרשימה הסופית לפני השליחה ללקוח
+            const mappedItemsForResponse = await getMappedItemsForPathfinding(userId);
+            const calculatedOrderMap = calculateShortestPath(mappedItemsForResponse);
+            
+            const listWithPaths = finalSortedList.map(item => {
+                const pathInfo = calculatedOrderMap[item.id] || { fullPath: [] };
+                return { ...item, fullPath: pathInfo.fullPath };
+            });
             
             // סיכום AI קצר
             const pathSummary = finalSortedList.map(item => item.item_name).join(' -> ');
@@ -227,7 +238,7 @@ export const uploadAndCalculate = async (req, res) => {
             res.json({
                 success: true,
                 message: 'הקובץ עובד והמסלול חושב',
-                list: finalSortedList,
+                list: listWithPaths, // שולחים את הרשימה עם המסלולים המלאים
                 answer: aiSummary
             });
     

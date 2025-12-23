@@ -38,7 +38,7 @@ async function extractProducts(rawText) {
     if (!rawText || rawText.trim() === '') return [];
     
     // הוראה ממוקדת ל-AI באמצעות System Instruction (נותן תוצאות טובות יותר)
-    const systemInstruction = "You are a shopping list data extractor. Your task is to extract every product mentioned in the input and return ONLY a JSON array of clean, singular product names, ignoring quantities, brands, emotional context, or specific instructions. For example, '2 יחידות חלב 3%' should become 'חלב'.";
+    const systemInstruction = " a shopping list data extractor. Your task is to extract every product mentioned in the input and return ONLY a JSON array of clean, singular product names, ignoring quantities, brands, emotional context, or specific instructions. For example, '2 יחידות חלב 3%' should become 'חלב'.";
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',

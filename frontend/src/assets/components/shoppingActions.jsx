@@ -21,6 +21,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
     };
 
     const handleFileUpload = async (e) => {
+        console.log("handleFileUpload");
         const file = e.target.files[0];
         if (!file) return;
         setIsWorking(true);

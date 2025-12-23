@@ -60,6 +60,7 @@ export const addItemManual = async (userId, itemName) => {
 };
 
 export const uploadFileAndCalculate = async (userId, file) => {
+    console.log("uploadFileAndCalculate");
     const formData = new FormData();
     formData.append('file', file);
     formData.append('userId', userId);
