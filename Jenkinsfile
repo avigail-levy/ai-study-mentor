@@ -7,7 +7,7 @@ pipeline {
         
         // הגדרות כלליות
         COMPOSE_FILE = 'docker-compose.yml'
-        REGISTRY_URL = 'docker.io/your-username' // החליפי בשם המשתמש שלך ב-DockerHub
+        REGISTRY_URL = 'docker.io/mirispigelman' // החליפי בשם המשתמש שלך ב-DockerHub
         BACKEND_IMAGE = 'ai-study-mentor-backend'
         FRONTEND_IMAGE = 'ai-study-mentor-frontend'
     }
