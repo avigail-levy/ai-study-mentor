@@ -36,9 +36,17 @@ pipeline {
         }
         stage('Build & Start') {
             steps {
-                sh 'docker-compose up -d --build --force-recreate'
+                script {
+                    try {
+                        sh 'docker-compose up -d --build --force-recreate'
+                    } catch (Exception e) {
+                        echo '❌ Docker Compose failed (likely DB timeout). Printing Postgres logs:'
+                        sh 'docker logs postgres-db'
+                        throw e
+                    }
+                }
                 echo 'Waiting for services to stabilize...'
-                sleep 45
+                sleep 30
             }
         }
         stage('Run Tests') {
