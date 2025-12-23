@@ -33,15 +33,15 @@ pipeline {
             }
         }
 
-        stage('Build & Start Environment') {
-            steps {
-                script {
-                    echo 'Building and starting Docker containers...'
-                    // בנייה והרצה של הסביבה
-                    // במקום docker-compose
-sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'                }
-            }
+      stage('Build & Start Environment') {
+    steps {
+        script {
+            echo 'Building and starting Docker containers...'
+            // וודאי שיש כאן מקף בין ה-docker ל-compose
+            sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'
         }
+    }
+}
 
         stage('Wait for Database') {
             steps {
@@ -85,16 +85,6 @@ sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'                }
                 }
             }
         }
-
-      stage('Build & Start Environment') {
-    steps {
-        script {
-            echo 'Building and starting Docker containers...'
-            // וודאי שיש כאן מקף בין ה-docker ל-compose
-            sh 'docker-compose -f ${COMPOSE_FILE} up -d --build'
-        }
-    }
-}
     }
 
     post {
