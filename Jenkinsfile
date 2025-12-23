@@ -4,7 +4,7 @@ pipeline {
     environment {
         // הגדרת נתיבים כדי שג'נקינס יזהה את docker-compose
         PATH = "/usr/local/bin:/usr/bin:/bin:${env.PATH}"
-        
+        DOCKER_HOST = "tcp://host.docker.internal:2375"        
         // הגדרות כלליות
         COMPOSE_FILE = 'docker-compose.yml'
         REGISTRY_URL = 'docker.io/mirispigelman' 
