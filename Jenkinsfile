@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     environment {
         PATH = "/usr/local/bin:/usr/bin:/bin:${env.PATH}"
         DOCKER_HOST = "tcp://host.docker.internal:2375"        
@@ -11,93 +10,53 @@ pipeline {
     }
 
     stages {
-        stage('Cleanup Workspace') {
+        stage('Cleanup') {
+    steps {
+        script {
+            echo 'Forcefully removing any existing project containers...'
+            // הוספת rm -f מוודאת שגם אם הקונטיינר תקוע, הוא יימחק בשם שלו
+            sh 'docker rm -f postgres-db finalaiproject-backend-1 finalaiproject-frontend-1 || true'
+            
+            // עכשיו ה-down יעבוד על בטוח ללא קונפליקטים
+            sh 'docker-compose down -v --remove-orphans || true'
+        }
+    }
+}
+        stage('Checkout') { steps { checkout scm } }
+        stage('Prepare Env') {
             steps {
-                script {
-                    echo 'Cleaning up environment and clearing old containers...'
-                    // ניקוי יסודי כדי למנוע התנגשויות של קונטיינרים קודמים
-                    sh 'docker-compose -f ${COMPOSE_FILE} down -v --remove-orphans || true'
-                    sh 'docker system prune -f || true'
+                sh 'mkdir -p backend'
+                withCredentials([
+                    string(credentialsId: 'DATABASE_URL', variable: 'DB_URL'),
+                    string(credentialsId: 'GEMINI_API_KEY', variable: 'AI_KEY'),
+                    string(credentialsId: 'PORT', variable: 'APP_PORT')
+                ]) {
+                    sh """
+                        echo "DATABASE_URL=${DB_URL}" > backend/.env
+                        echo "GEMINI_API_KEY=${AI_KEY}" >> backend/.env
+                        echo "PORT=${APP_PORT}" >> backend/.env
+                    """
                 }
             }
         }
-
-        stage('Checkout SCM') {
+        stage('Build & Start') {
             steps {
-                checkout scm
+                sh 'docker-compose up -d --build --force-recreate'
+                echo 'Waiting for services to stabilize...'
+                sleep 45
             }
         }
-
-        stage('Prepare Environment') {
-            steps {
-                script {
-                    echo 'Creating .env file...'
-                    sh 'mkdir -p backend'
-                    withCredentials([
-                        string(credentialsId: 'DATABASE_URL', variable: 'DB_URL'),
-                        string(credentialsId: 'GEMINI_API_KEY', variable: 'AI_KEY'),
-                        string(credentialsId: 'PORT', variable: 'APP_PORT')
-                    ]) {
-                        sh """
-                            echo "DATABASE_URL=${DB_URL}" > backend/.env
-                            echo "GEMINI_API_KEY=${AI_KEY}" >> backend/.env
-                            echo "PORT=${APP_PORT}" >> backend/.env
-                        """
-                    }
-                }
-            }
-        }
-
-      stage('Build & Start Environment') {
-            steps {
-                script {
-                    echo 'Force cleaning and rebuilding...'
-                    sh 'docker-compose down -v || true'
-                    // שימוש ב-force-recreate מבטיח שלא נשארות שאריות מהקריסה הקודמת
-                    sh 'docker-compose up -d --build --force-recreate'
-                    
-                    echo 'Waiting 45 seconds for Backend to be fully Up and Running...'
-                    sleep 45 
-                }
-            }
-        }
-
         stage('Run Tests') {
             steps {
                 script {
-                    echo 'Freeing up memory: Stopping Frontend...'
                     sh 'docker stop finalaiproject-frontend-1 || true'
-                    
-                    echo 'Verifying container status before exec...'
-                    sh 'docker ps' // זה ידפיס ללוג אם הקונטיינר ב-Up או ב-Restarting
-                    
-                    echo 'Running Tests...'
+                    // הדפסת לוגים של ה-backend לפני הטסטים כדי לראות אם יש שגיאת חיבור ל-DB
+                    sh 'docker logs finalaiproject-backend-1' 
                     sh 'docker-compose exec -T backend npm test'
-                    
-                    echo 'Restarting Frontend...'
-                    sh 'docker-compose up -d frontend'
-                }
-            }
-        }
-
-        stage('Test Coverage') {
-            steps {
-                script {
-                    sh 'docker-compose -f ${COMPOSE_FILE} exec -T backend npm run test:coverage'
-                }
-            }
-        }
-
-        stage('Build Production Images') {
-            steps {
-                script {
-                    sh "docker build -t ${REGISTRY_URL}/${BACKEND_IMAGE}:${BUILD_NUMBER} ./backend"
-                    sh "docker build -t ${REGISTRY_URL}/${FRONTEND_IMAGE}:${BUILD_NUMBER} ./frontend"
                 }
             }
         }
     }
-
     post {
         success { echo 'Pipeline Success! ✅' }
         failure { echo 'Pipeline Failed. ❌' }

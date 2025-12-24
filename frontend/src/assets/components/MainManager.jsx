@@ -31,7 +31,7 @@ const MainManager = () => {
             style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}
         >
             <header>
-                <h1>SmartPath | שלום {user.name}</h1>
+                <h1>Smart Shopper  | שלום {user.name}</h1>
             </header>
 
             {/* פעולות קנייה */}
