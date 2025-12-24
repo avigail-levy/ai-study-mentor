@@ -13,6 +13,9 @@ import { findOrCreateUser,findClosestCategory,
          updateItemMapping, 
          getUnmappedItems, 
          clearUserList,
+         updateItemDB,
+         deleteItemDB,
+         getShoppingListDB
   } from '../models/dbService.js';
   
 
@@ -297,5 +300,46 @@ export const clearList = async (req, res) => {
     } catch (error) {
         console.error('Clear List Error:', error);
         res.status(500).json({ error: 'Failed to clear list' });
+    }
+};
+// backend/controllers/shoppingListController.js
+
+// Get user's shopping list
+export const getShoppingList = async (req, res) => {
+    console.log("----------------------------")
+    const { userId } = req.params;
+    try {
+        const items = await getShoppingListDB(userId);
+        res.json(items);
+    } catch (error) {
+        console.error('Error fetching shopping list:', error);
+        res.status(500).json({ error: 'Failed to fetch shopping list' });
+    }
+};
+
+// Delete an item
+export const deleteItem = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await deleteItemDB(id);
+        res.status(200).json({ message: 'Item deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        res.status(500).json({ error: 'Failed to delete item' });
+    }
+};
+
+// Update an item
+export const updateItem = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const updatedItem = await updateItemDB(id);
+        if (!updatedItem) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.json(updatedItem);
+    } catch (error) {
+        console.error('Error updating item:', error);
+        res.status(500).json({ error: 'Failed to update item' });
     }
 };

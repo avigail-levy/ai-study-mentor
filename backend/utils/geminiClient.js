@@ -6,7 +6,7 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const EMBEDDING_MODEL = 'text-embedding-004'; 
 
 /*
- מקבלת מחרוזת טקסט ומחזירה את הקידוד הווקטורי שלה (Embedding).
+ מקבלת מחרוזת טקסט ומחזירה את הקידוד הווקטוריאבל שלה (Embedding).
   שימוש ב-SDK הרשמי לטיפול נכון בפורמט הבקשה.
  */
 export async function getEmbedding(text) {

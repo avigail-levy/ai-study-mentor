@@ -158,3 +158,50 @@ export async function clearUserList(userId) {
   const query = `DELETE FROM user_shopping_items WHERE user_id = $1`;
   await pool.query(query, [userId]);
 }
+// Get user's shopping list
+// backend/models/dbService.js
+
+export const getShoppingListDB = async (userId) => { // מקבל פרמטר פשוט
+    try {
+        const result = await pool.query(
+            "SELECT * FROM user_shopping_items WHERE user_id = $1", 
+            [userId]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error("Database error:", error);
+        throw error; // זורק את השגיאה חזרה לקונטרולר
+    }
+};
+
+// Delete an item
+// Delete an item
+export const deleteItemDB = async (id) => { // מקבל id בלבד
+    try {
+        await pool.query('DELETE FROM shopping_items WHERE id = $1', [id]);
+        return true; 
+    } catch (error) {
+        console.error('Error in deleteItemDB:', error);
+        throw error; // זורק את השגיאה שהקונטרולר יטפל בה
+    }
+};
+
+// Update an item
+export const updateItemDB = async (id, itemData) => { // מקבל id ואובייקט נתונים
+    const { item_name } = itemData;
+    
+    try {
+        const result = await pool.query(
+            `UPDATE shopping_items 
+             SET item_name = $1,  
+             WHERE id = $4
+             RETURNING *`,
+            [item_name, id]
+        );
+        
+        return result.rows[0]; // מחזיר את השורה המעודכנת או undefined
+    } catch (error) {
+        console.error('Error in updateItemDB:', error);
+        throw error;
+    }
+};
