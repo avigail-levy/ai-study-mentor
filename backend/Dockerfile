@@ -25,31 +25,46 @@
 # # הפקודה להרצת השרת
 # CMD ["node", "server.js"]
 # שימוש בגרסת Node עדכנית וקלה
-FROM node:20-alpine
+# FROM node:20-alpine
 
-# התקנת כלים בסיסיים שנדרשים לעיתים לבניית תלויות
-RUN apk add --no-cache python3 make g++
+# # התקנת כלים בסיסיים הנדרשים לבניית ספריות מסוימות
+# RUN apk add --no-cache python3 make g++
+
+# WORKDIR /app
+
+# # העתקת קבצי התלות בלבד בשלב הראשון (לניצול Cache)
+# COPY package*.json ./
+
+# # התקנת כל התלויות
+# RUN npm install
+
+# # העתקת שאר קוד המקור
+# COPY . .
+
+# # הענקת הרשאות מלאות לתיקייה
+# # הסרנו את המעבר ל-appuser כרגע כדי למנוע בעיות Permission Denied מול ה-Volume
+# RUN chmod -R 777 /app
+
+# EXPOSE 5000
+
+# # פקודת ההרצה שתואמת את ה-package.json שלך
+# CMD ["npm", "start"]
+FROM node:20-alpine
 
 WORKDIR /app
 
-# העתקת קבצי התלות
-COPY package*.json ./
+# העתקת קבצי package
+COPY package.json package-lock.json* ./
 
-# התקנת כל התלויות (כולל אלו של הטסטים)
+# התקנה
 RUN npm install
 
-# העתקת שאר קוד המקור
+# העתקת כל תוכן תיקיית ה-backend
 COPY . .
 
-# יצירת משתמש מאובטח והענקת הרשאות מלאות לתיקיית העבודה
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    chown -R appuser:appgroup /app
-
-# חשוב: ביצוע NPM Install נוסף אם יש צורך בשינוי בעלות, 
-# או פשוט לוודא שהמשתמש יכול לכתוב לתיקייה
-USER appuser
+# בדיקה ויזואלית בתוך הלוג של ג'נקינס שהקבצים קיימים
+RUN ls -la
 
 EXPOSE 5000
 
-# שימוש ב-NPM START כברירת מחדל
 CMD ["npm", "start"]
