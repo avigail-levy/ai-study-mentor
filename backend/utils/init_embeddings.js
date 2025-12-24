@@ -4,7 +4,9 @@ import { getEmbedding } from './geminiClient.js';
 /*
   פונקציית עזר לנורמליזציה (L2) של וקטור
  הופכת את אורך הוקטור ל-1, ומונעת הטיה בחישוב מרחק אוקלידי (L2).
+
 */
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 function normalizeVector(vector) {
     if (!vector || vector.length === 0) return [];
     
@@ -45,6 +47,7 @@ async function updateCategoryEmbeddings() {
 
         // 2. עבור על כל קטגוריה, חשב וקטור, נרמל ועדכן את ה-DB
         for (const category of categories) {
+            await delay(1000);
             try {
                 // א. חישוב ה-Embedding
                 const rawVector = await getEmbedding(category.name);

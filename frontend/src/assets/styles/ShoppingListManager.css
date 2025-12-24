@@ -27,6 +27,7 @@
   background-color: var(--background-white);
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
+  direction: ltr;
 }
 
 h2, h3 {
@@ -34,6 +35,7 @@ h2, h3 {
   margin-bottom: 1.5rem;
   text-align: center;
   font-weight: 600;
+  direction: ltr;
 }
 
 h2 {
@@ -41,6 +43,8 @@ h2 {
   margin-bottom: 2rem;
   position: relative;
   padding-bottom: 0.5rem;
+    direction: ltr;
+
 }
 
 h2::after {
@@ -81,6 +85,8 @@ button, .btn {
   max-width: 300px;
   margin: 0.5rem auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    direction: ltr;
+
 }
 
 button:hover, .btn:hover {
@@ -127,12 +133,16 @@ textarea, input[type="text"] {
   resize: vertical;
   min-height: 100px;
   font-family: inherit;
+    direction: ltr;
+
 }
 
 textarea:focus, input[type="text"]:focus {
   outline: none;
   border-color: var(--primary-light);
   box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
+    direction: ltr;
+
 }
 
 /* Uploaders Section */
@@ -141,6 +151,8 @@ textarea:focus, input[type="text"]:focus {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin: 2rem 0;
+    direction: ltr;
+
 }
 
 .uploader-card {
@@ -151,6 +163,8 @@ textarea:focus, input[type="text"]:focus {
   transition: var(--transition);
   text-align: center;
   border: 1px solid #e9ecef;
+    direction: ltr;
+
 }
 
 .uploader-card:hover {
@@ -162,6 +176,8 @@ textarea:focus, input[type="text"]:focus {
   margin: 0 0 1rem 0;
   color: var(--primary-color);
   font-size: 1.1rem;
+    direction: ltr;
+
 }
 
 /* Results Section */
@@ -172,6 +188,8 @@ textarea:focus, input[type="text"]:focus {
   margin-top: 2rem;
   border-left: 4px solid var(--primary-color);
   animation: fadeIn 0.5s ease-out;
+    direction: ltr;
+
 }
 
 @keyframes fadeIn {
@@ -183,6 +201,8 @@ textarea:focus, input[type="text"]:focus {
   list-style-type: none;
   padding: 0;
   margin: 1.5rem 0;
+    direction: ltr;
+
 }
 
 .path-list li {
@@ -194,6 +214,8 @@ textarea:focus, input[type="text"]:focus {
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: var(--transition);
+    direction: ltr;
+
 }
 
 .path-list li:hover {
@@ -224,6 +246,8 @@ hr {
   height: 1px;
   background: linear-gradient(90deg, transparent, #dee2e6, transparent);
   margin: 2.5rem 0;
+    direction: ltr;
+
 }
 
 /* Loading State */
@@ -252,6 +276,7 @@ hr {
   .uploaders-group {
     grid-template-columns: 1fr;
   }
+  
   
   h2 {
     font-size: 1.75rem;

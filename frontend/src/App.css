@@ -18,11 +18,16 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  direction: rtl;
+  direction: ltr;
   padding: 20px;
+  direction: ltr;
+  text-align: left;
   box-sizing: border-box;
 }
-
+* {
+  direction: ltr;
+  text-align: left;
+}
 .app-container {
   width: 100%;
   max-width: 800px;
@@ -193,6 +198,7 @@ button:active {
   margin-bottom: 30px;
   width: 100%;
   text-align: right;
+
 }
 
 .input-section h3 {
@@ -202,6 +208,8 @@ button:active {
   color: var(--secondary);
   text-align: right;
   width: 100%;
+    direction: ltr;
+
 }
 
 /* עיצוב כפתור הוספה מהירה */
@@ -241,4 +249,19 @@ button:active {
   font-style: italic;
   margin-bottom: 20px;
   border-radius: 8px;
+}
+/* FORCE LTR – final override */
+.login-card,
+.actions-card,
+.results-container,
+.input-section,
+.input-section h3,
+.path-item,
+button,
+input,
+ul,
+li,
+span {
+  direction: ltr !important;
+  text-align: left !important;
 }

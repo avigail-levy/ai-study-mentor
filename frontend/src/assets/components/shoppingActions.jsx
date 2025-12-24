@@ -12,9 +12,9 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
         try {
             await addItemManual(userId, textItem);
             setTextItem('');
-            alert("נוסף לרשימה!");
+            alert("Added to list!");
         } catch (err) {
-            alert("שגיאה בהוספת מוצר");
+            alert("Error adding product");
         } finally {
             setIsWorking(false);
         }
@@ -27,9 +27,9 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
         setIsWorking(true);
         try {
             await uploadFileAndCalculate(userId, file);
-            alert("המוצרים מהקובץ נוספו בהצלחה!");
+            alert("Products from file added successfully!");
         } catch (err) {
-            alert("שגיאה בעיבוד הקובץ");
+            alert("Error processing file");
         } finally {
             setIsWorking(false);
         }
@@ -38,12 +38,12 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
     const handleVoiceRecord = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("הדפדפן שלך לא תומך בזיהוי קולי.");
+            alert("Your browser does not support voice recognition.");
             return;
         }
 
         const recognition = new SpeechRecognition();
-        recognition.lang = 'he-IL';
+        recognition.lang = 'en-US'; // Changed to English for consistency
         recognition.interimResults = false;
 
         recognition.onstart = () => setIsListening(true);
@@ -54,10 +54,10 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
             try {
                 const data = await addVoiceItemsAI(userId, transcript);
                 if (data.success) {
-                    alert(`זיהיתי והוספתי: ${data.items.join(', ')}`);
+                    alert(`Recognized and added: ${data.items.join(', ')}`);
                 }
             } catch (err) {
-                alert("שגיאה בניתוח ה-AI");
+                alert("Error in AI analysis");
             } finally {
                 setIsWorking(false);
             }
@@ -70,27 +70,25 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
     const handleStartShopping = async () => {
         setIsWorking(true);
         try {
-            // וודא שהשרת מחזיר כאן אובייקט שמכיל list שבו לכל פריט יש fullPath
             const data = await calculatePath(userId); 
             if (data && data.list) {
                 onPathCalculated(data.list, data.answer);
             } else {
-                alert("לא נמצאו מוצרים לחישוב מסלול");
+                alert("No products found to calculate path");
             }
         } catch (err) {
             console.error(err);
-            alert("שגיאה בחישוב המסלול");
+            alert("Error calculating path");
         } finally {
             setIsWorking(false);
         }
     };
 
     const handleClearList = async () => {
-        if (!window.confirm("האם אתה בטוח שברצונך למחוק את כל הרשימה?")) return;
+        if (!window.confirm("Are you sure you want to clear the entire list?")) return;
         
         setIsWorking(true);
         try {
-            // פנייה ישירה לשרת למחיקת הרשימה
             const response = await fetch('http://localhost:5000/api/list/clear', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -99,13 +97,12 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
             
             const data = await response.json();
             if (data.success) {
-                alert("הרשימה נמחקה בהצלחה!");
-                // איפוס התצוגה במסך הראשי (מעביר רשימה ריקה)
+                alert("List cleared successfully!");
                 if (onPathCalculated) onPathCalculated([], '');
             }
         } catch (err) {
             console.error(err);
-            alert("שגיאה במחיקת הרשימה");
+            alert("Error clearing the list");
         } finally {
             setIsWorking(false);
         }
@@ -114,20 +111,20 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
     return (
         <div className="actions-card">
             <div className="input-section">
-                <h3>✍️ הוספה מהירה</h3>
+                <h3>✍️ Quick Add</h3>
                 <div style={{display: 'flex', gap: '8px'}}>
-                    <input type="text" value={textItem} onChange={e => setTextItem(e.target.value)} placeholder="חלב, לחם..." />
-                    <button className="add-btn" onClick={handleManual} disabled={isWorking}>הוסף</button>
+                    <input type="text" value={textItem} onChange={e => setTextItem(e.target.value)} placeholder="Milk, Bread..." />
+                    <button className="add-btn" onClick={handleManual} disabled={isWorking}>Add</button>
                 </div>
             </div>
 
             <div className="input-section" style={{marginTop: '20px'}}>
-                <h3>📄 העלאת רשימה (PDF/תמונה)</h3>
+                <h3>📄 Upload List (PDF/Image)</h3>
                 <input type="file" className="file-input" onChange={handleFileUpload} accept="image/*,application/pdf" disabled={isWorking} />
             </div>
 
             <div className="input-section" style={{marginTop: '20px'}}>
-                <h3>🎤 הקלטת רשימה</h3>
+                <h3>🎤 Voice Record</h3>
                 <button 
                     className={`voice-btn ${isListening ? 'listening' : ''}`} 
                     onClick={handleVoiceRecord}
@@ -142,7 +139,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
                         cursor: 'pointer'
                     }}
                 >
-                    {isListening ? "👂 מאזין..." : "🎤 הקלט מוצרים"}
+                    {isListening ? "👂 Listening..." : "🎤 Record Items"}
                 </button>
             </div>
 
@@ -150,7 +147,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <button className="calculate-btn" onClick={handleStartShopping} disabled={isWorking || isListening}>
-                    {isWorking ? "המערכת מעבדת..." : "🚀 חשב מסלול קצר ביותר"}
+                    {isWorking ? "Processing..." : "🚀 Calculate Shortest Path"}
                 </button>
 
                 <button 
@@ -165,7 +162,7 @@ const ShoppingActions = ({ userId, onPathCalculated }) => {
                         cursor: 'pointer'
                     }}
                 >
-                    🗑️ נקה רשימה
+                    🗑️ Clear List
                 </button>
             </div>
         </div>
