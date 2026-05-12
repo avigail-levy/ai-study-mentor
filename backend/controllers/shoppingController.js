@@ -1,5 +1,4 @@
 import fs from 'fs/promises';
-import path from 'path';
 import { extractProductsFromPDF, 
          extractProductsFromImage,
          extractProductsFromText } from '../utils/assistant.js';
@@ -73,7 +72,6 @@ export const addVoiceItems = async (req, res) => {
                 return res.json({ success: true, items: [], message: "לא זוהו מוצרים" });
             }
     
-            // 2. הוספת כל מוצר בנפרד ל-Database
             const addedIds = [];
             for (const itemName of extractedProducts) {
                 const itemId = await addItemToRawList(userId, itemName);

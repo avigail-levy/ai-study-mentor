@@ -61,11 +61,6 @@ function getBFS_Path(start, end) {
     return { distance: Infinity, fullPath: [] }; 
 }
 
-/**
- * מציאת סדר הקניות האופטימלי וחישוב כיווני הגעה לכל מוצר
- * @param {object[]} itemCoordinates - רשימת המוצרים {item_id, r, c}
- * @returns {object} מפה של itemId -> {order, direction}
- */
 export function calculateShortestPath(itemCoordinates) {
     if (itemCoordinates.length === 0) return {};
     

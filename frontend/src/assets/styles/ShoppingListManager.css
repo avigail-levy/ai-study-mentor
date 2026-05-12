@@ -17,25 +17,77 @@
   --transition: all 0.3s ease;
 }
 
-/* General Styling */
-.shopping-manager-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--text-primary);
-  background-color: var(--background-white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  direction: ltr;
+/* Main Layout */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--background-light);
+    padding: 1rem;
 }
 
-h2, h3 {
+.shopping-layout {
+    display: flex;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 2rem;
+}
+
+.shopping-list-container {
+    width: 350px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+}
+
+.main-content {
+    flex: 1;
+    background: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+}
+
+/* Typography */
+h1, h2, h3 {
   color: var(--primary-color);
   margin-bottom: 1.5rem;
   text-align: center;
   font-weight: 600;
   direction: ltr;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+  direction: ltr;
+}
+
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+  border-radius: 3px;
+}
+
+h3 {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  color: var(--primary-dark);
 }
 
 h2 {
@@ -268,22 +320,32 @@ hr {
 }
 
 /* Responsive Design */
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .shopping-layout {
+    flex-direction: column;
+  }
+  
+  .shopping-list-container {
+    width: 100%;
+    position: static;
+    max-height: none;
+    margin-bottom: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .shopping-manager-container {
-    padding: 1rem;
-  }
   
-  .uploaders-group {
-    grid-template-columns: 1fr;
-  }
-  
-  
-  h2 {
+  h1 {
     font-size: 1.75rem;
   }
   
+  h2 {
+    font-size: 1.5rem;
+  }
+  
   h3 {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
   }
 }
 

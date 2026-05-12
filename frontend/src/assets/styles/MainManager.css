@@ -1,0 +1,115 @@
+/* MainManager.css - Modern & Bold Style */
+
+.manager-layout {
+    max-width: 750px;
+    margin: 40px auto;
+    padding: 25px;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #6d5efd, #3b82f6);
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    color: #fff;
+}
+
+.manager-header h1 {
+    text-align: center;
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+}
+
+.results-container {
+    margin-top: 30px;
+}
+
+.results-container h2 {
+    margin-bottom: 18px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+}
+
+.ai-box {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    padding: 14px;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    font-style: italic;
+    color: #f0f7ff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.path-list {
+    list-style: none;
+    padding: 0;
+}
+
+.path-item {
+    background: rgba(255,255,255,0.1);
+    padding: 18px 14px;
+    margin-bottom: 16px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.path-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+}
+
+.item-title {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.instructions-container {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    color: #e0e7ff;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    padding: 10px;
+    border-radius: 12px;
+    direction: ltr;
+    text-align: left;
+}
+
+.instructions-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.instructions-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.step {
+    font-size: 1.15rem;
+}
+
+.arrow {
+    margin: 0 6px;
+    opacity: 0.5;
+}
+.shopping-section {
+  display: flex;         /* ✅ מציג לצדדים */
+  gap: 20px;             /* רווח בין הכרטיסים */
+  flex-wrap: wrap;       /* לשמור על רספונסיביות */
+}
+
+.shopping-section > * {
+  flex: 1;               /* כל כרטיס יקח חצי מסך במקביל */
+  min-width: 300px;
+}

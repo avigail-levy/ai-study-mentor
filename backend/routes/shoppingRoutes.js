@@ -1,8 +1,6 @@
 import express from 'express';
 import multer from 'multer';
 import * as shopCtrl from '../controllers/shoppingController.js';
-import { fileURLToPath } from 'url';
-
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
